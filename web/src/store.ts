@@ -170,39 +170,71 @@ export function authToken(): string | null {
   return getToken();
 }
 
-const SEED: { title: string; rest: string }[] = [
+const SEED: { title: string; rest: string; daysAgo: number }[] = [
+  {
+    title: 'probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。',
+    rest: '顺序是：量 regulator enable 到输出稳定的时间 → 看 driver 的 probe 里有没有 I2C 轮询等待 → 查有没有 -EPROBE_DEFER 反复重试 → 才轮到调度和 CPU 频率。\n大多数「内核慢」最后都是硬件时序。',
+    daysAgo: 0,
+  },
+  {
+    title: '看到 -517 就是 EPROBE_DEFER，不是失败。',
+    rest: '意思是「我依赖的东西还没准备好」，内核让你等一等。真正要查的是那个依赖为什么没起来 —— 常见是 regulator、clk、gpio 的驱动还没 probe 完。',
+    daysAgo: 1,
+  },
+  {
+    title: 'dmesg 里 Freeing unused kernel memory 是内核态和用户态的分界线。',
+    rest: '它之前全是内核初始化，之后才是 init。算启动耗时必须先按这一刀切开，否则会把用户态的慢算到内核头上。',
+    daysAgo: 2,
+  },
+  {
+    title: '两份 dts 用了同一个 GPIO，编译一声不响，上板才发现。',
+    rest: 'pinctrl 里 A 节点用了 GPIO3_A2，B 节点也用了。合并时不会报冲突，因为语法完全合法。只有运行时读 pinmux 寄存器才知道谁赢了。\n多人并行改 dts 时这是高频事故。',
+    daysAgo: 3,
+  },
+  {
+    title: 'initcall_debug 只能启动前打开，别人的 log 事后用不上。',
+    rest: '所以拿到一份现成的 dmesg，只能靠时间戳差值人工找嫌疑：从 [ 0.823] 翻到 [ 1.457]，中间发生了什么全靠眼睛找。\n这就是为什么想要一个直接吃 dmesg 的工具。',
+    daysAgo: 5,
+  },
+  {
+    title: 'I2C 通信失败，先量上拉电阻，再看时序。',
+    rest: '4.7k 上拉在 400k 速率下边沿常常太慢。示波器看 SCL 上升沿，如果爬到 3.3V 用了几百纳秒，就是它。\n曾经因为这个换过一整批板子上的电阻。',
+    daysAgo: 6,
+  },
+  {
+    title: '设备树 reg 区间重叠，编译器不报，运行时内存被踩。',
+    rest: '两个节点都从 0x10000000 起、长度各 0x1000 —— 完全合法。这类问题只能自己写脚本扫，靠 review 看是看不出来的。',
+    daysAgo: 8,
+  },
   {
     title: '间隔重复的关键不是复习，是在「快忘记」的那一刻复习。',
-    rest: '太早复习是浪费，太晚复习等于重学。所以真正要算的不是「第几天复习」，是「你有多大概率还记得」。\n难度系数 ease 就是这个估计：ease 越低，说明这条对你越难，间隔涨得越慢。',
+    rest: '太早复习是浪费，太晚复习等于重学。所以真正要算的不是「第几天复习」，是「你有多大概率还记得」。\n难度系数 ease 就是这个估计。',
+    daysAgo: 10,
   },
   {
     title: '本地优先不是「离线能用」，是「本地数据才是唯一真相」。',
     rest: '服务器只是另一台设备。同步是两台设备交换各自知道的事实，不是把数据上传备份。\n这个区别决定了断网时你到底还能不能干活。',
-  },
-  {
-    title: 'BSP 里 probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。',
-    rest: '顺序是：量 regulator enable 到输出稳定的时间 → 看 driver 的 probe 里有没有 I2C 轮询等待 → 查有没有 -EPROBE_DEFER 反复重试 → 才轮到调度和 CPU 频率。\n大多数「内核慢」最后都是硬件时序。',
-  },
-  {
-    title: '写文档，第一句话决定别人读不读。',
-    rest: '结论放最前面，背景放后面。读者随时可以走，你只有一句半的机会。\n所以「本项目是一个基于 XX 的 YY 系统」这种开头，等于没写。',
+    daysAgo: 12,
   },
 ];
 
 async function seedIfEmpty(): Promise<void> {
   if (await local.readMeta<boolean>('seeded')) return;
   const now = Date.now();
-  const notes: StoredNote[] = SEED.map((item, index) => ({
-    id: crypto.randomUUID(),
-    body: `${item.title}\n${item.rest}`,
-    createdAt: now - (SEED.length - index) * 60_000,
-    updatedAt: now - (SEED.length - index) * 60_000,
-    deletedAt: null,
-    memory: { ...freshMemory(now), due: now },
-    reviewCount: 0,
-    baseUpdatedAt: 0,
-    origin: 'demo',
-  }));
+  const notes: StoredNote[] = SEED.map((item, index) => {
+    const created = now - item.daysAgo * DAY - index * 37 * 60_000;
+    return {
+      id: crypto.randomUUID(),
+      body: `${item.title}\n${item.rest}`,
+      createdAt: created,
+      updatedAt: created,
+      deletedAt: null,
+      memory: { ...freshMemory(now), due: now },
+      reviewCount: 0,
+      baseUpdatedAt: 0,
+      origin: 'demo',
+    };
+  });
 
   state = { ...state, notes: [...state.notes, ...notes] };
   await local.putNotes(notes);

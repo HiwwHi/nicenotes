@@ -62,3 +62,20 @@ export function splitBody(body: string): { title: string; rest: string } {
   if (index === -1) return { title: trimmed, rest: '' };
   return { title: trimmed.slice(0, index).trim(), rest: trimmed.slice(index + 1).trim() };
 }
+
+const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六'];
+
+/** 按天分组时的日期标题：今天 / 昨天 / 11 月 5 日 · 周三 */
+export function dayGroupLabel(ts: number, now = Date.now()): string {
+  const diff = Math.round((startOfDay(now) - startOfDay(ts)) / DAY);
+  if (diff === 0) return '今天';
+  if (diff === 1) return '昨天';
+
+  const d = new Date(ts);
+  const week = WEEKDAY[d.getDay()] ?? '';
+  if (d.getFullYear() === new Date(now).getFullYear()) {
+    return `${d.getMonth() + 1} 月 ${d.getDate()} 日 · 周${week}`;
+  }
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+}
+

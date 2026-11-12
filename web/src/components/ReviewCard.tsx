@@ -21,7 +21,7 @@ export function ReviewCard({ note, kind, revealed, onReveal, onGrade, onEdit, on
 
   const meta =
     kind === 'new'
-      ? `新笔记 · 记于 ${pastLabel(note.createdAt, now)}`
+      ? `还没复习过 · 记于 ${pastLabel(note.createdAt, now)}`
       : `第 ${note.reviewCount} 次复习 · 上次 ${pastLabel(note.memory.lastReviewedAt ?? note.createdAt, now)}`;
 
   const overdueDays = kind === 'due' ? Math.floor((now - note.memory.due) / 86_400_000) : 0;

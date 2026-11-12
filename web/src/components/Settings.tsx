@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
 import { pastLabel } from '../lib/date';
+import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
-import { signIn, signOut, syncNow, useApp } from '../store';
+import { buildExport, importJson, signIn, signOut, syncNow, toast, useApp } from '../store';
 
 interface Props {
   theme: Theme;
@@ -16,12 +17,14 @@ const THEMES: { value: Theme; label: string }[] = [
 ];
 
 export function Settings({ theme, onTheme }: Props) {
-  const { account, syncing, lastSyncAt, syncError, notes } = useApp();
+  const { account, syncing, lastSyncAt, syncError, notes, log } = useApp();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const now = Date.now();
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -39,6 +42,29 @@ export function Settings({ theme, onTheme }: Props) {
   }
 
   const visible = notes.filter((note) => !note.deletedAt).length;
+  const streak = computeStreak(log, now);
+  const reviews = totalReviews(log);
+  const cells = buildHeatmap(log, 12, now);
+
+  function doExport() {
+    const blob = new Blob([buildExport()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast('已导出，是一个普通 JSON 文件');
+  }
+
+  async function doImport(file: File) {
+    try {
+      const count = await importJson(await file.text());
+      toast(count > 0 ? `导入 ${count} 条` : '文件里没有笔记', count > 0 ? 'ok' : 'warn');
+    } catch {
+      toast('这个文件读不了，需要之前导出的 JSON', 'error');
+    }
+  }
 
   return (
     <section className="settings">
@@ -115,6 +141,38 @@ export function Settings({ theme, onTheme }: Props) {
       </div>
 
       <div className="panel">
+        <h2 className="panel-title">记录</h2>
+        <div className="stats">
+          <div className="stat">
+            <span className="stat-value">{streak}</span>
+            <span className="stat-label">连续天数</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{reviews}</span>
+            <span className="stat-label">累计复习</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{visible}</span>
+            <span className="stat-label">笔记</span>
+          </div>
+        </div>
+
+        <div className="heat" aria-label="最近 12 周的复习记录">
+          {cells.map((cell) => {
+            const level = cell.count === 0 ? 0 : cell.count < 3 ? 1 : cell.count < 6 ? 2 : 3;
+            return (
+              <span
+                key={cell.ts}
+                className={`heat-cell heat-${level} ${cell.future ? 'is-future' : ''}`}
+                title={cell.count ? `${new Date(cell.ts).toLocaleDateString('zh-CN')} · ${cell.count} 次` : ''}
+              />
+            );
+          })}
+        </div>
+        <p className="panel-note">每一格是一天。空着不代表失败，只说明那天没打开。</p>
+      </div>
+
+      <div className="panel">
         <h2 className="panel-title">外观</h2>
         <div className="segmented">
           {THEMES.map((item) => (
@@ -146,6 +204,32 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>/</kbd> 打开全部笔记并搜索
           </li>
         </ul>
+      </div>
+
+      <div className="panel">
+        <h2 className="panel-title">数据</h2>
+        <p className="panel-desc">
+          导出是一个普通 JSON，任何编辑器都能打开。换设备、换浏览器、哪天不想用了，都能把东西带走。
+        </p>
+        <div className="panel-actions">
+          <button type="button" className="btn btn-ghost" onClick={doExport}>
+            导出全部
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => fileRef.current?.click()}>
+            从 JSON 导入
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void doImport(file);
+              event.target.value = '';
+            }}
+          />
+        </div>
       </div>
 
       <div className="panel">

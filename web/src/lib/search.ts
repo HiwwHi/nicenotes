@@ -1,0 +1,295 @@
+import type { StoredNote } from '../types';
+
+/**
+ * 关联度检索。
+ *
+ * 中文没有空格，用「二元组」切分（以太网 → 以太 / 太网），英文和数字按词切。
+ * 打分是 TF-IDF 的简化版：词频用 log 压一下，越少见的词权重越高，
+ * 首行（标题位）命中额外加权，最后按命中覆盖率做乘数。
+ *
+ * 整个过程纯本地、零依赖、毫秒级 —— 不需要联网，也不需要模型。
+ */
+
+const WORD = /^[a-z0-9_.#+-]+$/;
+
+/** 把文本切成检索单元 */
+export function tokenize(text: string): string[] {
+  const out: string[] = [];
+  const source = text.toLowerCase();
+  const pattern = /[\u4e00-\u9fff]+|[a-z0-9_.#+-]+/g;
+  let found: RegExpExecArray | null;
+
+  while ((found = pattern.exec(source)) !== null) {
+    const segment = found[0];
+    if (WORD.test(segment)) {
+      out.push(segment);
+      continue;
+    }
+    if (segment.length === 1) {
+      out.push(segment);
+      continue;
+    }
+    for (let i = 0; i < segment.length - 1; i += 1) {
+      out.push(segment.slice(i, i + 2));
+    }
+  }
+  return out;
+}
+
+function uniq(items: string[]): string[] {
+  return [...new Set(items)];
+}
+
+export interface SearchHit {
+  note: StoredNote;
+  /** 相对最高分的比例，用于展示排序强弱 */
+  score: number;
+  /** IDF 加权的命中覆盖率：这条笔记覆盖了查询里多少「有分量」的词 */
+  coverage: number;
+  /** 实际命中的检索单元，用来高亮 */
+  matched: string[];
+}
+
+export interface SearchResult {
+  hits: SearchHit[];
+  /** 查询被拆成的检索单元，用于高亮 */
+  terms: string[];
+  /** 结果里所有命中的单元（含同义展开），用于高亮正文 */
+  marks: string[];
+}
+
+interface Doc {
+  note: StoredNote;
+  counts: Map<string, number>;
+  titleCounts: Map<string, number>;
+  length: number;
+  searchable: string;
+}
+
+function toDoc(note: StoredNote): Doc {
+  const counts = new Map<string, number>();
+  for (const token of tokenize(note.body)) {
+    counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+
+  const firstBreak = note.body.indexOf('\n');
+  const titleText = firstBreak === -1 ? note.body : note.body.slice(0, firstBreak);
+  const titleCounts = new Map<string, number>();
+  for (const token of tokenize(titleText)) {
+    titleCounts.set(token, (titleCounts.get(token) ?? 0) + 1);
+  }
+
+  return {
+    note,
+    counts,
+    titleCounts,
+    length: Math.max(24, note.body.length),
+    searchable: note.body.toLowerCase(),
+  };
+}
+
+const TITLE_WEIGHT = 2.4;
+const RECENCY_WEIGHT = 0.14;
+const DAY = 86_400_000;
+
+/**
+ * 按关联度检索。查询里用空格分成几段时，各段的结果会合并排序 ——
+ * 命中段数越多的排越前，但不会因为少命中一段就被剔除。
+ */
+export function searchNotes(notes: StoredNote[], query: string, now = Date.now()): SearchResult {
+  const text = query.trim();
+  if (!text) return { hits: [], terms: [], marks: [] };
+
+  const alive = notes.filter((note) => !note.deletedAt);
+  const groups = text
+    .split(/\s+/)
+    .map((part) => uniq(tokenize(part)))
+    .filter((part) => part.length > 0);
+
+  // 全是标点之类的，退回到字面包含
+  if (groups.length === 0) {
+    const hits = alive
+      .filter((note) => note.body.toLowerCase().includes(text.toLowerCase()))
+      .map<SearchHit>((note) => ({ note, score: 100, coverage: 1, matched: [text] }));
+    return { hits, terms: [text], marks: [text] };
+  }
+
+  const allTerms = uniq(groups.flat());
+  const docs = alive.map(toDoc);
+  const total = Math.max(1, docs.length);
+
+  const df = new Map<string, number>();
+  for (const term of allTerms) {
+    let count = 0;
+    for (const doc of docs) if (doc.counts.has(term)) count += 1;
+    df.set(term, count);
+  }
+
+  const idfOf = (term: string) => Math.log(1 + total / (1 + (df.get(term) ?? 1)));
+  const totalIdf = allTerms.reduce((sum, term) => sum + idfOf(term), 0);
+
+  const scored = docs.map((doc) => {
+    let raw = 0;
+    const matched = new Set<string>();
+
+    for (const group of groups) {
+      let groupScore = 0;
+      let groupHits = 0;
+      for (const term of group) {
+        const tf = doc.counts.get(term) ?? 0;
+        if (tf === 0) continue;
+        groupHits += 1;
+        matched.add(term);
+        const idf = idfOf(term);
+        const titleBoost = doc.titleCounts.has(term) ? TITLE_WEIGHT : 1;
+        groupScore += (1 + Math.log(tf)) * idf * titleBoost;
+      }
+      if (groupHits > 0) {
+        // 覆盖率：这一段查的词命中比例越高，得分越可信
+        raw += groupScore * (0.55 + 0.45 * (groupHits / group.length));
+      }
+    }
+
+    if (raw <= 0) return null;
+
+    // 长文不该因为长就占便宜，但也不该被重罚
+    raw /= Math.sqrt(doc.length / 60);
+
+    const ageDays = Math.max(0, (now - doc.note.updatedAt) / DAY);
+    raw *= 1 + RECENCY_WEIGHT * Math.exp(-ageDays / 120);
+
+    const matchedIdf = [...matched].reduce((sum, term) => sum + idfOf(term), 0);
+    const coverage = totalIdf > 0 ? matchedIdf / totalIdf : 0;
+
+    return { doc, raw, matched: [...matched], coverage };
+  });
+
+  const kept = scored.filter((item): item is NonNullable<typeof item> => item !== null);
+  if (kept.length === 0) return { hits: [], terms: allTerms, marks: [] };
+
+  kept.sort((a, b) => b.raw - a.raw);
+  const top = kept[0]!.raw;
+
+  const hits = kept.map<SearchHit>((item) => ({
+    note: item.doc.note,
+    // 开平方让 0.3 和 0.9 的差距在视觉上更可读
+    score: Math.round(Math.sqrt(item.raw / top) * 100),
+    coverage: item.coverage,
+    matched: item.matched,
+  }));
+
+  return { hits, terms: allTerms, marks: uniq(hits.flatMap((hit) => hit.matched)) };
+}
+
+/**
+ * 找出和某条笔记讲得最像的几条。展开一条笔记时用，
+ * 就是「今天记的一点，和上周记的另一点其实是一件事」那个效果。
+ *
+ * 判定方式不是「相对分最高」，而是「有分量的词撞上了至少两个」：
+ * 短文本里相对分很容易把唯一一个沾边的推成第一名，那等于乱推。
+ */
+export function relatedNotes(note: StoredNote, notes: StoredNote[], limit = 3): SearchHit[] {
+  const pool = notes.filter((item) => item.id !== note.id && !item.deletedAt);
+  if (pool.length === 0) return [];
+
+  const cut = note.body.indexOf('\n');
+  const title = (cut === -1 ? note.body : note.body.slice(0, cut)).trim();
+  const source = title.length >= 4 ? title : note.body.slice(0, 120);
+  if (source.trim().length < 4) return [];
+
+  const docs = pool.map(toDoc);
+  const terms = uniq(tokenize(source));
+  const total = pool.length + 1;
+
+  // 去掉「大半笔记里都有的词」：它们多半是「的是」「一个」这类组合，
+  // 拿来做关联判断只会把不相干的东西凑到一起。
+  const df = new Map<string, number>();
+  for (const term of terms) {
+    let count = 0;
+    for (const doc of docs) if (doc.counts.has(term)) count += 1;
+    df.set(term, count);
+  }
+
+  const common = Math.max(2, Math.floor(pool.length * 0.6));
+  const weighted = terms
+    .filter((term) => (df.get(term) ?? 0) < common)
+    .map((term) => ({ term, idf: Math.log(1 + total / (1 + (df.get(term) ?? 1))) }))
+    .sort((a, b) => b.idf - a.idf) as { term: string; idf: number }[];
+
+  if (weighted.length < 2) return [];
+
+  const scored = docs
+    .map((doc) => {
+      let hits = 0;
+      let sum = 0;
+      const matched: string[] = [];
+      for (const item of weighted) {
+        if (!doc.counts.has(item.term)) continue;
+        hits += 1;
+        sum += item.idf;
+        matched.push(item.term);
+      }
+      return { doc, hits, sum, matched };
+    })
+    // 至少撞上三个词才算「讲得相近」。只撞两个的时候，多半是
+    // 「怀疑」「时序」这类各说各话的巧合 —— 推出来只会让人觉得在乱猜。
+    .filter((item) => item.hits >= 3);
+
+  if (scored.length === 0) return [];
+
+  scored.sort((a, b) => b.sum - a.sum);
+  const top = scored[0]!.sum;
+
+  return scored.slice(0, limit).map((item) => ({
+    note: item.doc.note,
+    score: Math.round(Math.sqrt(item.sum / top) * 100),
+    coverage: item.hits / weighted.length,
+    matched: item.matched,
+  }));
+}
+
+/** 把命中的词在文本里标出来（返回分段，交给 React 渲染） */
+export function highlight(text: string, marks: string[]): { text: string; hit: boolean }[] {
+  if (marks.length === 0) return [{ text, hit: false }];
+
+  const lower = text.toLowerCase();
+  const spans: { start: number; end: number }[] = [];
+
+  for (const mark of marks) {
+    if (!mark) continue;
+    let from = 0;
+    while (from < lower.length) {
+      const index = lower.indexOf(mark, from);
+      if (index === -1) break;
+      spans.push({ start: index, end: index + mark.length });
+      from = index + 1;
+      if (spans.length > 200) break;
+    }
+  }
+
+  if (spans.length === 0) return [{ text, hit: false }];
+
+  spans.sort((a, b) => a.start - b.start || b.end - a.end);
+
+  // 合并重叠区间：bigram 命中会互相压住，不合并会切得很碎
+  const merged: { start: number; end: number }[] = [];
+  for (const span of spans) {
+    const last = merged[merged.length - 1];
+    if (last && span.start <= last.end) {
+      last.end = Math.max(last.end, span.end);
+    } else {
+      merged.push({ ...span });
+    }
+  }
+
+  const parts: { text: string; hit: boolean }[] = [];
+  let cursor = 0;
+  for (const span of merged) {
+    if (span.start > cursor) parts.push({ text: text.slice(cursor, span.start), hit: false });
+    parts.push({ text: text.slice(span.start, span.end), hit: true });
+    cursor = span.end;
+  }
+  if (cursor < text.length) parts.push({ text: text.slice(cursor), hit: false });
+
+  return parts;
+}

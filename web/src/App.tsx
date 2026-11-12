@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeftIcon, CloseIcon, PlusIcon, SearchIcon, SettingsIcon } from './components/Icons';
 import { Composer } from './components/Composer';
-import { CloudIcon, PlusIcon, RefreshIcon, SettingsIcon } from './components/Icons';
-import { Library } from './components/Library';
-import { ReviewCard } from './components/ReviewCard';
 import { Settings } from './components/Settings';
-import { dayKey, dueLabel, splitBody } from './lib/date';
+import { Stream } from './components/Stream';
+import { dayKey } from './lib/date';
 import { isNew } from './lib/scheduler';
 import { applyTheme, readTheme, type Theme } from './lib/theme';
 import {
@@ -15,15 +14,13 @@ import {
   nextSoonest,
   removeNote,
   reveal,
-  reviewEarly,
   skip,
   syncNow,
-  toast,
   useApp,
 } from './store';
 import type { Grade } from './types';
 
-type View = 'review' | 'library' | 'settings';
+type View = 'stream' | 'settings';
 
 interface ComposerState {
   mode: 'create' | 'edit';
@@ -33,17 +30,19 @@ interface ComposerState {
 
 export default function App() {
   const app = useApp();
-  const [view, setView] = useState<View>('review');
+  const [view, setView] = useState<View>('stream');
+  const [query, setQuery] = useState('');
   const [theme, setTheme] = useState<Theme>(() => readTheme());
   const [composer, setComposer] = useState<ComposerState | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     applyTheme(theme);
     if (theme !== 'auto') return;
-    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => applyTheme('auto');
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
   }, [theme]);
 
   useEffect(() => {
@@ -55,7 +54,8 @@ export default function App() {
   }, [app.ready]);
 
   const current = app.currentId ? app.notes.find((note) => note.id === app.currentId) : undefined;
-  const currentKind: 'due' | 'new' = current && isNew(current) ? 'new' : 'due';
+  const review = current ? { note: current, kind: isNew(current) ? ('new' as const) : ('due' as const) } : null;
+  const nextAt = nextSoonest();
 
   const openCreate = useCallback(() => setComposer({ mode: 'create', initial: '' }), []);
 
@@ -63,20 +63,34 @@ export default function App() {
     setComposer({ mode: 'edit', noteId, initial: body });
   }, []);
 
-  const onGrade = useCallback(
-    (value: Grade) => {
-      if (!app.currentId) return;
-      void grade(app.currentId, value);
-    },
-    [app.currentId],
-  );
+  const focusSearch = useCallback(() => {
+    setView('stream');
+    requestAnimationFrame(() => searchRef.current?.focus());
+  }, []);
+
+  const onGrade = useCallback((value: Grade) => {
+    if (!app.currentId) return;
+    void grade(app.currentId, value);
+  }, [app.currentId]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (composer) return;
       const target = event.target as HTMLElement | null;
       const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
-      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === 'Escape') {
+        if (query) {
+          setQuery('');
+          searchRef.current?.blur();
+          return;
+        }
+        if (view === 'settings') setView('stream');
+        return;
+      }
+
+      if (typing) return;
 
       if (event.key === 'n' || event.key === 'N') {
         event.preventDefault();
@@ -86,12 +100,11 @@ export default function App() {
 
       if (event.key === '/') {
         event.preventDefault();
-        setView('library');
-        requestAnimationFrame(() => document.getElementById('search-input')?.focus());
+        focusSearch();
         return;
       }
 
-      if (view !== 'review' || !current) return;
+      if (view !== 'stream' || query || !current) return;
 
       if (event.key === ' ') {
         event.preventDefault();
@@ -100,20 +113,14 @@ export default function App() {
       }
 
       if (event.key === '1' || event.key === '2' || event.key === '3') {
-        if (!app.revealed && splitBody(current.body).rest) return;
         event.preventDefault();
-        void grade(
-          current.id,
-          (Number(event.key) - 1) as Grade,
-        );
+        void grade(current.id, (Number(event.key) - 1) as Grade);
       }
     }
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [app.revealed, composer, current, openCreate, view]);
-
-  const todayKey = dayKey(Date.now());
+  }, [app.revealed, composer, current, focusSearch, openCreate, query, view]);
 
   if (app.fatal) {
     return (
@@ -127,94 +134,111 @@ export default function App() {
 
   if (!app.ready) return <div className="booting" />;
 
+  const todayKey = dayKey(Date.now());
+
   return (
     <div className="app">
       <header className="top">
-        <div className="brand">
+        <button
+          type="button"
+          className="brand"
+          onClick={() => {
+            setView('stream');
+            setQuery('');
+          }}
+          title="回到最先的那条"
+        >
           <span className="brand-dot" aria-hidden="true" />
           <span className="brand-name">NiceNotes</span>
-        </div>
+        </button>
 
-        <nav className="tabs" aria-label="主导航">
-          <button
-            type="button"
-            className={view === 'review' ? 'is-active' : ''}
-            onClick={() => setView('review')}
-          >
-            复习
-          </button>
-          <button
-            type="button"
-            className={view === 'library' ? 'is-active' : ''}
-            onClick={() => setView('library')}
-          >
-            全部
-          </button>
-        </nav>
+        {view === 'stream' ? (
+          <div className={`searchbar ${query ? 'has-value' : ''}`}>
+            <SearchIcon className="searchbar-icon" />
+            <input
+              ref={searchRef}
+              id="search-input"
+              className="searchbar-input"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="搜笔记，按相关度找"
+              spellCheck={false}
+              aria-label="搜索笔记"
+            />
+            {query ? (
+              <button
+                type="button"
+                className="searchbar-clear"
+                aria-label="清除搜索"
+                onClick={() => {
+                  setQuery('');
+                  searchRef.current?.focus();
+                }}
+              >
+                <CloseIcon size={14} />
+              </button>
+            ) : (
+              <kbd className="searchbar-key">/</kbd>
+            )}
+          </div>
+        ) : (
+          <div className="top-title">
+            <button type="button" className="link" onClick={() => setView('stream')}>
+              <ArrowLeftIcon size={14} />
+              回到笔记
+            </button>
+            <span className="top-title-text">设置</span>
+          </div>
+        )}
 
         <div className="top-actions">
           {app.account && (
             <button
               type="button"
-              className="icon-btn"
-              title={app.syncing ? '同步中' : '立即同步'}
-              aria-label="立即同步"
-              disabled={app.syncing}
+              className={`sync-dot ${app.syncing ? 'is-busy' : ''} ${app.syncError ? 'is-error' : ''}`}
+              title={app.syncError ?? (app.syncing ? '同步中' : '已连接，点一下立即同步')}
+              aria-label="同步状态"
               onClick={() => void syncNow()}
-            >
-              {app.syncing ? <RefreshIcon className="spin" /> : <CloudIcon />}
-            </button>
+            />
           )}
+
           <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
-            <PlusIcon />
+            <PlusIcon size={15} />
             <span>记一条</span>
           </button>
+
           <button
             type="button"
             className={`icon-btn ${view === 'settings' ? 'is-active' : ''}`}
             aria-label="设置"
-            onClick={() => setView('settings')}
+            title="设置"
+            onClick={() => setView(view === 'settings' ? 'stream' : 'settings')}
           >
             <SettingsIcon />
           </button>
         </div>
       </header>
 
-      <main className={`main ${view === 'review' ? 'main-review' : ''}`}>
-        {view === 'review' &&
-          (current ? (
-            <ReviewCard
-              note={current}
-              kind={currentKind}
-              revealed={app.revealed}
-              reviewedToday={app.log[todayKey] ?? 0}
-              onReveal={reveal}
-              onGrade={onGrade}
-              onEdit={() => openEdit(current.id, current.body)}
-              onSkip={skip}
-            />
-          ) : (
-            <EmptyState onCreate={openCreate} onBrowse={() => setView('library')} />
-          ))}
-
-        {view === 'library' && (
-          <Library
+      <main className="main">
+        {view === 'stream' ? (
+          <Stream
             notes={app.notes}
-            log={app.log}
+            review={review}
+            revealed={app.revealed}
+            reviewedToday={app.log[todayKey] ?? 0}
+            query={query}
+            nextAt={nextAt}
+            onReveal={reveal}
+            onGrade={onGrade}
+            onSkip={skip}
             onEdit={(note) => openEdit(note.id, note.body)}
             onDelete={(id) => void removeNote(id)}
+            onClearQuery={() => setQuery('')}
           />
+        ) : (
+          <Settings theme={theme} onTheme={setTheme} />
         )}
-
-        {view === 'settings' && <Settings theme={theme} onTheme={setTheme} />}
       </main>
-
-      <footer className="foot">
-        <span>
-          NiceNotes · 写一句就够，它会在你快忘记的时候回来找你
-          {app.account ? '' : ' · 数据只在这台设备上'}
-        </span>
-      </footer>
 
       {composer && (
         <Composer
@@ -223,7 +247,14 @@ export default function App() {
           noteId={composer.noteId}
           onClose={() => setComposer(null)}
           onSubmit={async (text) => {
-            if (composer.mode === 'create') return addNote(text);
+            if (composer.mode === 'create') {
+              const ok = await addNote(text);
+              if (ok) {
+                setQuery('');
+                setView('stream');
+              }
+              return ok;
+            }
             if (composer.noteId) await editNote(composer.noteId, text);
             return true;
           }}
@@ -236,53 +267,5 @@ export default function App() {
         </div>
       )}
     </div>
-  );
-}
-
-function EmptyState({ onCreate, onBrowse }: { onCreate: () => void; onBrowse: () => void }) {
-  const app = useApp();
-  const now = Date.now();
-  const alive = app.notes.filter((note) => !note.deletedAt);
-  const fresh = alive.filter(isNew).length;
-  const soon = nextSoonest();
-  const hasReviewed = alive.some((note) => !isNew(note));
-
-  let title = '今天的都复习完了';
-  let desc = soon ? `下一次会在 ${dueLabel(soon, now)} 回来。` : '记一条，明天就有东西可复习。';
-
-  if (alive.length === 0) {
-    title = '还没有笔记';
-    desc = '想到什么写一句就行，不用起标题。它会在你快忘记的时候自己回来。';
-  } else if (fresh > 0) {
-    title = '今天的新笔记看完了';
-    desc = `还压着 ${fresh} 条没排进来。新笔记一天最多放 3 条，多了就变成负担。`;
-  }
-
-  return (
-    <section className="empty">
-      <h1>{title}</h1>
-      <p>{desc}</p>
-      <div className="empty-actions">
-        <button type="button" className="btn btn-primary" onClick={onCreate}>
-          <PlusIcon />
-          <span>记一条</span>
-        </button>
-        {hasReviewed && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              reviewEarly();
-              toast('提前看一条最近的');
-            }}
-          >
-            提前看一条
-          </button>
-        )}
-        <button type="button" className="btn btn-ghost" onClick={onBrowse}>
-          浏览全部
-        </button>
-      </div>
-    </section>
   );
 }
