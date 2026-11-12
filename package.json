@@ -1,16 +1,25 @@
 {
   "name": "nicenotes",
+  "version": "2.0.0",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "description": "NiceNotes — 写一句就够，它会在你快忘记的时候回来找你一次。",
+  "description": "本地优先的间隔重复笔记：写一句话，它会在你快忘记的时候回来找你",
+  "license": "MIT",
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "engines": {
+    "node": ">=22.5"
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "dev": "concurrently -n api,web -c magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w web && npm run typecheck -w server"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "vite": "^6.0.7"
+    "concurrently": "^9.1.2"
   }
 }

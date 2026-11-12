@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+      - name: 后端冒烟测试
+        run: |
+          node server/dist/index.js &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8787/api/health > /dev/null 2>&1; then break; fi
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:8787/api/health
+          kill $SERVER_PID

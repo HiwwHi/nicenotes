@@ -1,0 +1,16 @@
+services:
+  nicenotes:
+    build: .
+    image: nicenotes:latest
+    container_name: nicenotes
+    restart: unless-stopped
+    ports:
+      - '8787:8787'
+    environment:
+      PORT: '8787'
+      DB_PATH: /data/nicenotes.sqlite
+    volumes:
+      - nicenotes-data:/data
+
+volumes:
+  nicenotes-data:
