@@ -1,0 +1,18 @@
+{
+  "name": "NiceNotes",
+  "short_name": "NiceNotes",
+  "description": "写一句就够，它会在你快忘记的时候回来找你一次。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F7F4EC",
+  "theme_color": "#F7F4EC",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

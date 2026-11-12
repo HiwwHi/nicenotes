@@ -1,0 +1,16 @@
+{
+  "name": "nicenotes",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NiceNotes — 写一句就够，它会在你快忘记的时候回来找你一次。",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
