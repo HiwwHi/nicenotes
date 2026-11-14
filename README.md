@@ -78,6 +78,10 @@ Every write goes to IndexedDB first, and local is always the source of truth. Wi
 
 You can use it forever without an account, and not a single byte leaves the device. Signing in only adds one capability: getting your notes back on another device.
 
+**It really does open with the network off.** A service worker keeps the page and its JS/CSS on disk: navigations go network-first and fall back to cache, hashed assets are cache-first, and `/api/` is never touched. So you get the newest version while online, and the last complete version while offline.
+
+Relying on the browser's HTTP cache would not be enough — that expires. The way this is verified: clear the HTTP cache with `Network.clearBrowserCache`, go offline, reload. The page opens as usual, every note is there, and you can still write.
+
 ### 2. Sync is not a backup upload, it is two devices exchanging facts
 
 This is where most of the work went. The usual way to "add sync" is to overwrite the whole library, and the moment two devices edit, you lose data. What is here instead is incremental sync with explicit conflicts:
@@ -194,7 +198,7 @@ nicenotes/
 │  │  │  ├─ Composer.tsx      new note / edit / version history
 │  │  │  └─ Settings.tsx      account, records, appearance, data
 │  │  └─ styles.css           all styling, colors as CSS variables
-│  └─ public/                 icons and PWA manifest
+│  └─ public/                 icons, manifest, service worker (offline cache)
 ├─ server/                    backend: Hono + node:sqlite
 │  └─ src/
 │     ├─ index.ts             routes, auth middleware, static hosting
