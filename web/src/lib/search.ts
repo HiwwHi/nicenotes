@@ -281,8 +281,7 @@ export function relatedNotes(note: StoredNote, notes: StoredNote[], limit = 3): 
   }));
 }
 
-/** 把命中的词在文本里标出来（返回分段，交给 React 渲染） */
-export function highlight(text: string, marks: string[]): { text: string; hit: boolean }[] {
+/** 把命中的词在文本里标出来（返回分段，交给 React 渲染） */export function highlight(text: string, marks: string[]): { text: string; hit: boolean }[] {
   if (marks.length === 0) return [{ text, hit: false }];
 
   const lower = text.toLowerCase();
@@ -325,4 +324,32 @@ export function highlight(text: string, marks: string[]): { text: string; hit: b
   if (cursor < text.length) parts.push({ text: text.slice(cursor), hit: false });
 
   return parts;
+}
+
+/**
+ * 从命中位置附近截一小段做预览。
+ *
+ * 列表里的预览原本是正文开头，但搜索命中的词常常在几十行之后 ——
+ * 那样你看到的一行跟搜索词毫无关系，等于白搜。
+ */
+export function snippet(text: string, marks: string[], length = 64): string {
+  if (marks.length === 0) return text;
+
+  const lower = text.toLowerCase();
+  let at = -1;
+
+  for (const mark of marks) {
+    if (!mark) continue;
+    const index = lower.indexOf(mark);
+    if (index !== -1 && (at === -1 || index < at)) at = index;
+  }
+
+  if (at === -1) return text.slice(0, length);
+
+  // 命中点偏左放，右边多留一点上下文
+  const start = Math.max(0, at - Math.floor(length / 3));
+  const end = Math.min(text.length, start + length);
+  const slice = text.slice(start, end).replace(/\s+/g, ' ').trim();
+
+  return `${start > 0 ? '…' : ''}${slice}${end < text.length ? '…' : ''}`;
 }

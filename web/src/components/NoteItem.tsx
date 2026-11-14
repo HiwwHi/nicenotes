@@ -1,7 +1,8 @@
+import { useEffect } from 'react';
 import { dueLabel, pastLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
-import type { SearchHit } from '../lib/search';
+import { snippet, type SearchHit } from '../lib/search';
 import type { StoredNote } from '../types';
 import { LinkIcon, PencilIcon, TrashIcon } from './Icons';
 import { Marked, Rich } from './Rich';
@@ -39,7 +40,19 @@ export function NoteItem({
   const now = Date.now();
   const { title, rest } = splitBody(note.body);
   const heading = plainText(title);
-  const preview = plainText(rest);
+  // 搜索时预览从命中处截，不然你看到的一行跟搜索词毫无关系
+  const flat = plainText(rest);
+  const preview = marks.length > 0 ? snippet(flat, marks) : flat;
+
+  // 展开后把第一个命中滚进视野 —— 长笔记里命中常常在几十行之后
+  useEffect(() => {
+    if (!expanded) return;
+    const frame = requestAnimationFrame(() => {
+      const root = document.getElementById(`note-${note.id}`);
+      root?.querySelector('mark.hit')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [expanded, note.id]);
 
   return (
     <li id={`note-${note.id}`} className={`item ${expanded ? 'is-open' : ''} ${featured ? 'is-featured' : ''}`}>
