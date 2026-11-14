@@ -1,130 +1,132 @@
 # NiceNotes
 
-**写一句就够。它会在你快忘记的时候，自己回来找你一次。**
+**Write one line. It comes back to find you just before you forget it.**
+
+**English** · [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/HiwwHi/nicenotes/actions/workflows/ci.yml/badge.svg)](../../actions)
 ![license](https://img.shields.io/badge/license-MIT-8F5B2E)
-![offline first](https://img.shields.io/badge/local--first-yes-3F6B4F)
+![local first](https://img.shields.io/badge/local--first-yes-3F6B4F)
 ![no native deps](https://img.shields.io/badge/backend-zero%20native%20deps-A8792B)
 
-![首屏](docs/shot-stream.png)
+![First screen](docs/shot-stream.png)
 
-## 这不是又一个笔记工具
+## This is not another note-taking app
 
-你装过的笔记软件大概都是这样：写进去，然后再也不打开。问题不在编辑器，也不在 Markdown 支持好不好——**笔记只进不出**，没有出口，就变成坟墓。
+Every note app you have installed works the same way: you write something in, and you never open it again. The problem is not the editor, and it is not whether it supports Markdown — **notes only go in and never come out.** Without an exit, a notebook becomes a graveyard.
 
-所以这个项目只做一件事：**让你写下的东西按遗忘曲线回来找你。**
+So this project does exactly one thing: **it brings what you wrote back to you on a forgetting curve.**
 
-## 一个流，不分文件夹
+## One stream, no folders
 
-打开它，第一屏永远是一条笔记，不是一个列表：
+Open it and the first screen is always a single note, not a list:
 
-- 有该复习的 → 就是那一条，第二行之后先糊住，逼你自己回想
-- 没有该复习的 → 从全部笔记里**加权抽一条**，越久没碰过的越容易被翻到
+- Something is due → that is the one on screen, and everything after the second line is blurred so you have to recall it yourself.
+- Nothing is due → it **weighted-samples one note** from the whole library. The longer a note has gone untouched, the more likely it surfaces.
 
-往下滚就是全部笔记，按天分组，一天一条线。想找什么，顶部的搜索一直等在那里。
+Scroll down and you get everything, grouped by day, one line per day. When you need to find something, search is always waiting at the top.
 
-没有目录、没有标签树、没有「请先创建笔记本」。**你不需要管理它，你只需要写。**
+No directories, no tag trees, no "please create a notebook first." **You do not manage it. You just write.**
 
-![随手翻到](docs/shot-peek.png)
+![A note it happened to surface](docs/shot-peek.png)
 
-### 三个按钮，就三个
+### Three buttons. Just three.
 
-想不起来就展开看，然后回答一个问题：你记得多少？
+If you cannot recall it, expand it and answer one question: how much did you remember?
 
-| 按钮 | 含义 | 下次出现 |
+| Button | Meaning | Comes back |
 |---|---|---|
-| 忘了 | 完全没想起来 | 10 分钟后 |
-| 有点模糊 | 想起来了，但不确定 | 明天 |
-| 记得 | 清楚记得 | 2 天后 |
+| Forgot | Nothing came back | In 10 minutes |
+| Fuzzy | Recalled it, but unsure | Tomorrow |
+| Remembered | Crystal clear | In 2 days |
 
-间隔会随复习次数拉长，最长一年。按钮下面直接写着下次时间——这行小字是整个产品最重要的反馈，它让你相信系统真的在管这件事。
+The interval stretches with every review, up to one year. The next review time is printed right under the buttons — that one line of small text is the most important feedback in the whole product. It is what makes you believe the system is really on top of this.
 
-## 搜索不要求你记得原话
+## Search does not require the exact words
 
-大多数笔记软件的搜索是「子串匹配」：你打错一个字，或者只记得意思不记得用词，就什么都找不到。
+Search in most note apps is substring matching: mistype one character, or remember the meaning instead of the wording, and you get nothing.
 
-这里的搜索是**按相关度排序**的，而且完全在本地算，不联网、不调模型、不需要 API key：
+Search here is **ranked by relevance, computed entirely on device** — no network, no model, no API key:
 
-- 中文没有空格，按**二元组**切分（`以太网` → `以太` / `太网`），英文和数字按词切
-- 打分是简化的 TF-IDF：词频取 log 压一下，越少见的词权重越高
-- 首行命中额外 ×2.4 —— 笔记的第一行就是它的标题，那才是你真正想找的东西
-- 结果带一个百分比，是你和这条笔记的相关度
+- Chinese has no spaces, so text is split into **bigrams** (`以太网` → `以太` / `太网`); English and digits are split on word boundaries
+- Scoring is simplified TF-IDF: term frequency is log-damped, rarer terms carry more weight
+- A hit in the first line gets an extra ×2.4 — the first line is the note's title, and that is what you are actually looking for
+- Every result carries a percentage: how strongly it matches you
 
-打 `probe` 会同时找到标题里有它和正文里有它的笔记，前者排在前面。打 `phy 复位` 不用打全，拆开的词各自命中也会合并排序。
+Typing `probe` finds both notes that mention it in the title and in the body, with the title matches ranked first. Typing `phy 复位` does not need to be exact — the split terms are matched and merged into one ranking.
 
-![按关联度搜索](docs/shot-search.png)
+![Search by relevance](docs/shot-search.png)
 
-### 展开一条，它会把讲得相近的带出来
+### Expand a note and it brings up the ones about the same thing
 
-同一件事，你可能会在不同日子各记一点。这些点之间通常没有相同的词——「ETH 不通，怀疑复位」和「确认了，是 reset-gpio 漏配」几乎没有一个字重合，靠关键词永远连不起来。
+You often write about one subject on several different days. Those notes usually share no vocabulary at all — "ETH down, suspect reset" and "confirmed: missing reset-gpio" have almost no characters in common. Keyword search will never connect them.
 
-这里做的是能自动做到的那一半：**展开一条笔记时，把它和全库里真正讲得相近的几条一起给你**。
+What this does is the half that can be done automatically: **expanding a note also hands you the few notes in your library that are genuinely about the same thing.**
 
-判定标准是「至少撞上三个有分量的词」——只撞两个的时候，多半是「怀疑」「时序」这类各说各话的巧合，推出来只会让人觉得在乱猜。宁可少推，不可乱推。
+The rule is "at least three meaningful terms must overlap." With only two, it is usually coincidence — words like "suspect" or "timing" that everybody uses. Better to surface nothing than to guess wildly.
 
-![展开与相近的笔记](docs/shot-search-open.png)
+![Expanded view with related notes](docs/shot-search-open.png)
 
-这一步不需要模型。真正的语义归并（把两条用词完全不同、讲的是同一件事的笔记连起来）需要模型，那是下一步的事，我把它留成一个可选能力，而不是第一版就绑死一个 API key。
+No model involved. True semantic merging — connecting two notes that share no vocabulary but describe the same event — needs a model. That is the next step, and it stays an optional capability instead of binding the first release to an API key.
 
-## 技术上有意思的地方
+## The technically interesting parts
 
-### 1. 本地优先，不是「离线可用」
+### 1. Local-first, not "works offline"
 
-所有数据先写 IndexedDB，永远以本地为准。没有网络的时候它就是完整的应用，不是降级版。
+Every write goes to IndexedDB first, and local is always the source of truth. With no network it is the complete app, not a degraded one.
 
-不登录也能一直用，一个字节都不会离开这台设备。登录只是多一个能力：换设备时把笔记接回来。
+You can use it forever without an account, and not a single byte leaves the device. Signing in only adds one capability: getting your notes back on another device.
 
-### 2. 同步不是上传备份，是两台设备交换事实
+### 2. Sync is not a backup upload, it is two devices exchanging facts
 
-这是这个项目真正花时间的部分。绝大多数「加个同步」的做法是「整库覆盖」，两台设备同时改就丢数据。这里做的是增量 + 冲突显式化：
+This is where most of the work went. The usual way to "add sync" is to overwrite the whole library, and the moment two devices edit, you lose data. What is here instead is incremental sync with explicit conflicts:
 
 ```
-客户端                          服务端
+client                          server
   │  POST /sync                  │
-  │  since: 42                   │  → 取 seq > 42 的所有笔记（增量拉取）
-  │  notes: [改过的笔记]           │  → 逐条比较 updatedAt
-  │   每条带 baseUpdatedAt        │     双方都改过 = 真冲突
-  │                              │     落败的一方写进 note_history
+  │  since: 42                   │  → every note with seq > 42 (incremental pull)
+  │  notes: [changed notes]      │  → compare updatedAt note by note
+  │   each carries baseUpdatedAt │     both sides changed = real conflict
+  │                              │     the loser is written to note_history
   │  ← { since, notes, conflicts }
 ```
 
-关键在于每条笔记多带一个 `baseUpdatedAt`：**客户端上次同步时看到的版本**。服务端据此能分清三种情况：
+The key is that every note carries an extra `baseUpdatedAt`: **the version the client saw at its last sync.** From that, the server can tell three cases apart:
 
-| 服务端变了 | 本地变了 | 处理 |
+| Server changed | Local changed | Result |
 |---|---|---|
-| 否 | 否 | 跳过 |
-| 是 | 否 | 直接用服务端版本 |
-| 否 | 是 | 接受本地版本 |
-| 是 | 是 | **真冲突**：`updatedAt` 新的赢，输的那份进历史 |
+| No | No | Skip |
+| Yes | No | Take the server version |
+| No | Yes | Accept the local version |
+| Yes | Yes | **Real conflict**: newest `updatedAt` wins, the loser goes to history |
 
-输掉的内容不会消失。界面上「历史版本」能看到每一次被覆盖的正文，一键恢复。
+The losing content is not destroyed. "Version history" in the UI shows every overwritten body, with one-click restore.
 
-只做最后写入胜，不做 CRDT —— CRDT 能让这个项目永远发不出去。
+Last-write-wins only, no CRDT — CRDT would keep this project from ever shipping.
 
-### 3. 「随机」是加权的，不是真随机
+### 3. "Random" is weighted, not uniform
 
-如果纯随机，一条你早就记牢的和一条明天就要忘的，被抽中的概率一样。用两周你会发现它老给你看已经会的东西。
+With uniform randomness, a note you memorized long ago and one you are about to forget are equally likely to appear. Two weeks in, it keeps showing you things you already know.
 
-实际权重是 `1 + 距上次碰它的天数`，上限 30 天。上限定在这里是有原因的：不设上限，一条放了半年的笔记会连续三天霸占你的屏幕，然后你就卸载了。
+The actual weight is `1 + days since you last touched it`, capped at 30. The cap is deliberate: without it, a note left alone for six months would dominate your screen for three days straight, and then you would uninstall.
 
-### 4. 后端零原生依赖
+### 4. Zero native dependencies on the backend
 
-数据库用 Node 22 内置的 `node:sqlite`，不用编译 `better-sqlite3`，不用 Python 工具链，`npm ci` 装完就能跑。整个后端只有两个依赖：`hono` 和 `@hono/node-server`。
+The database is Node 22's built-in `node:sqlite` — no compiling `better-sqlite3`, no Python toolchain, `npm ci` and it runs. The entire backend has two dependencies: `hono` and `@hono/node-server`.
 
-密码用 `scrypt` + 随机盐，会话是随机 32 字节令牌，登录接口有朴素限流。这些都在标准库里。
+Passwords use `scrypt` with a random salt, sessions are random 32-byte tokens, and the login endpoint has naive rate limiting. All of it from the standard library.
 
-### 5. 除了 React，前端没有别的运行时依赖
+### 5. No frontend runtime dependencies besides React
 
-没有 UI 库、没有状态管理库、没有图标库、没有 CSS 框架。`styles.css` 一个文件，配色全走 CSS 变量，深浅两套。图标是手写的 SVG。
+No UI kit, no state management library, no icon set, no CSS framework. One `styles.css`, colors as CSS variables, light and dark. Icons are hand-written SVG.
 
-状态只有一个 `store.ts`，用 `useSyncExternalStore` 订阅——不需要 Redux 也不需要 Context 嵌套。
+State lives in a single `store.ts` read through `useSyncExternalStore` — no Redux, no nested Context.
 
-![深色模式](docs/shot-stream-dark.png)
+![Dark mode](docs/shot-stream-dark.png)
 
-## 快速开始
+## Quick start
 
-### Docker（推荐，一条命令）
+### Docker (recommended, one command)
 
 ```bash
 git clone https://github.com/HiwwHi/nicenotes.git
@@ -132,95 +134,94 @@ cd nicenotes
 docker compose up -d
 ```
 
-打开 <http://127.0.0.1:8787>。数据库落在 `nicenotes-data` 卷里，删容器不丢数据。
+Open <http://127.0.0.1:8787>. The database lives in the `nicenotes-data` volume, so removing the container does not lose it.
 
-### 本地开发
+### Local development
 
-需要 Node.js 22.5 以上（`node:sqlite` 从这版开始可用）。
+Requires Node.js 22.5 or newer (`node:sqlite` is available from that version).
 
 ```bash
 npm install
 npm run dev
 ```
 
-- 前端 <http://127.0.0.1:5183>（Vite，`/api` 已代理到后端）
-- 后端 <http://127.0.0.1:8787>
+- Frontend <http://127.0.0.1:5183> (Vite, `/api` proxied to the backend)
+- Backend <http://127.0.0.1:8787>
 
-生产模式：
+Production mode:
 
 ```bash
 npm run build
-npm start          # 后端同时托管前端静态文件，只有一个端口
+npm start          # the backend also serves the built frontend, single port
 ```
 
-### 演示站
+### Live demo
 
-推上 GitHub 后，`pages.yml` 会自动发布一个纯静态版本到 GitHub Pages。
-那个版本**没有后端**，同步功能会自动隐藏，其余功能完整——它能证明界面和交互是真的，同步得自己 `docker compose up` 才有。
+Once the repository is on GitHub, `pages.yml` publishes a purely static build to GitHub Pages. That build **has no backend** — the sync UI hides itself and everything else works, which is enough to show the interface and interactions are real. For sync, run `docker compose up` yourself.
 
-## 快捷键
+## Keyboard shortcuts
 
-| 键 | 作用 |
+| Key | Action |
 |---|---|
-| <kbd>空格</kbd> | 展开内容 |
-| <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | 忘了 / 有点模糊 / 记得 |
-| <kbd>N</kbd> | 记一条 |
-| <kbd>/</kbd> | 跳到搜索框 |
-| <kbd>Esc</kbd> | 清空搜索 / 退出设置 |
-| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | 保存 |
+| <kbd>Space</kbd> | Expand the note |
+| <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Forgot / Fuzzy / Remembered |
+| <kbd>N</kbd> | New note |
+| <kbd>/</kbd> | Jump to search |
+| <kbd>Esc</kbd> | Clear search / leave settings |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Save |
 
-## 目录结构
+## Project layout
 
 ```
 nicenotes/
-├─ web/                       前端：React 19 + TypeScript + Vite
+├─ web/                       frontend: React 19 + TypeScript + Vite
 │  ├─ src/
-│  │  ├─ store.ts             状态 + 选题 + 同步编排（唯一的状态来源）
+│  │  ├─ store.ts             state + note selection + sync orchestration (single source of truth)
 │  │  ├─ lib/
-│  │  │  ├─ scheduler.ts      SM-2 改良版排期
-│  │  │  ├─ search.ts         二元组切分 + TF-IDF 相关度检索
-│  │  │  ├─ db.ts             IndexedDB 手写封装，不引库
-│  │  │  ├─ api.ts            后端客户端
-│  │  │  └─ stats.ts          连续天数、12 周热力图
+│  │  │  ├─ scheduler.ts      a variant of SM-2 scheduling
+│  │  │  ├─ search.ts         bigram tokenizing + TF-IDF relevance ranking
+│  │  │  ├─ db.ts             hand-written IndexedDB wrapper, no library
+│  │  │  ├─ api.ts            backend client
+│  │  │  └─ stats.ts          streaks, 12-week heatmap
 │  │  ├─ components/
-│  │  │  ├─ Stream.tsx        一个流：主角卡 + 按天分组的全部笔记
-│  │  │  ├─ ReviewCard.tsx    遮住后半、三个评分按钮
-│  │  │  ├─ PeekCard.tsx      没有复习任务时，随手翻到的一条
-│  │  │  ├─ NoteItem.tsx      流里的一条，点开看全文和相近的笔记
-│  │  │  ├─ Composer.tsx      记一条 / 编辑 / 历史版本
-│  │  │  └─ Settings.tsx      账号、记录、外观、数据
-│  │  └─ styles.css           全部样式，配色走 CSS 变量
-│  └─ public/                 图标与 PWA manifest
-├─ server/                    后端：Hono + node:sqlite
+│  │  │  ├─ Stream.tsx        one stream: hero card + all notes grouped by day
+│  │  │  ├─ ReviewCard.tsx    hides the second half, three rating buttons
+│  │  │  ├─ PeekCard.tsx      when nothing is due, one note it surfaced
+│  │  │  ├─ NoteItem.tsx      one note in the stream, expands to full text + related notes
+│  │  │  ├─ Composer.tsx      new note / edit / version history
+│  │  │  └─ Settings.tsx      account, records, appearance, data
+│  │  └─ styles.css           all styling, colors as CSS variables
+│  └─ public/                 icons and PWA manifest
+├─ server/                    backend: Hono + node:sqlite
 │  └─ src/
-│     ├─ index.ts             路由、鉴权中间件、静态托管
-│     ├─ auth.ts              scrypt 密码、会话令牌、限流
-│     ├─ sync.ts              增量同步与冲突合并
-│     └─ db.ts                表结构与查询
-├─ Dockerfile                 两阶段构建，产物镜像只带运行时
-└─ docker-compose.yml         起服务 + 数据卷
+│     ├─ index.ts             routes, auth middleware, static hosting
+│     ├─ auth.ts              scrypt passwords, session tokens, rate limiting
+│     ├─ sync.ts              incremental sync and conflict merging
+│     └─ db.ts                schema and queries
+├─ Dockerfile                 two-stage build, runtime-only final image
+└─ docker-compose.yml         service + data volume
 ```
 
-## 数据与隐私
+## Data and privacy
 
-- 不登录：所有数据只在浏览器的 IndexedDB 里，`导出 JSON` 随时带走。
-- 登录：笔记同步到你自己的服务端，不经过任何第三方。
-- 搜索、相近推荐、排期，全部在浏览器里算，不发任何请求。
-- 没有统计脚本、没有埋点、没有第三方字体和 CDN。
-- 第一次打开会塞 9 条示例笔记。它们不会被同步；一旦登录的账号里已经有内容，示例会被清掉。
+- Not signed in: everything stays in the browser's IndexedDB, and "Export JSON" takes it with you.
+- Signed in: notes sync to your own server. No third party in the path.
+- Search, related-note suggestions and scheduling all run in the browser. They make no requests.
+- No analytics, no tracking, no third-party fonts or CDNs.
+- Nine sample notes are seeded on first open. They are never synced; once an account you sign into already has content, they are removed.
 
-## 已知限制
+## Known limitations
 
-- **不做富文本和图片**。这个产品的假设是「一句话 + 一段解释」，加编辑器会毁掉这个假设。
-- **相近推荐只看词，不看意思**。用词完全不同的两条笔记它连不起来——那需要模型，是下一步。
-- **同步是最后写入胜**。同一段文字在两台设备上同时修改，晚的那份赢，早的那份进历史。不会自动合并句子。
-- **没有找回密码**。邮箱只用于区分账号，不发信。忘了密码等于换账号——这也是不接邮件服务换来的简单。
-- **iPhone 上的 PWA 存储会被系统清理**（长期不打开时）。所以手机端真要长期用，服务器和账号是必需的，不是可选项。
+- **No rich text and no images.** The product assumes "one line plus a paragraph." Adding an editor would destroy that assumption.
+- **Related notes match words, not meaning.** Two notes that describe the same thing in completely different words will not be connected — that needs a model, and it is next.
+- **Sync is last-write-wins.** Edit the same passage on two devices and the later one wins while the earlier one goes to history. Sentences are not merged automatically.
+- **No password recovery.** Email only identifies an account, nothing is sent. Forget the password and you start a new account — the price of not wiring up an email service.
+- **On iPhone, PWA storage gets evicted by the system** if you do not open it for a long time. So for long-term phone use, a server and an account are required, not optional.
 
-## 许可
+## License
 
-[MIT](LICENSE) · 随便用、随便改、商用也可以。
+[MIT](LICENSE) · use it, change it, ship it commercially.
 
 ---
 
-如果它让你想起了某条本来会忘掉的东西，点个 **Star** 就是最好的支持。
+If it reminded you of something you would otherwise have forgotten, a **Star** is the best way to say thanks.
