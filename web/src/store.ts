@@ -124,10 +124,15 @@ function visibleNotes(notes: StoredNote[]): StoredNote[] {
   return notes.filter((note) => !note.deletedAt);
 }
 
+/** 归档 = 不再进复习队列，但笔记本身还在流里，随时能翻到 */
+function isArchived(note: StoredNote): boolean {
+  return Boolean(note.archivedAt);
+}
+
 function pickNext(app: Pick['kind'] | 'any' = 'any'): Pick | null {
   const now = Date.now();
   const exclude = new Set(app === 'any' ? state.sessionDone : state.sessionDone);
-  const pool = visibleNotes(state.notes).filter((note) => !exclude.has(note.id));
+  const pool = visibleNotes(state.notes).filter((note) => !exclude.has(note.id) && !isArchived(note));
 
   if (app !== 'new') {
     const due = pool.filter((note) => isDue(note, now));
@@ -345,6 +350,26 @@ export async function restoreNote(id: string): Promise<void> {
   scheduleSync();
 }
 
+/** 不再复习这条。笔记本身留着，想翻回来随时能找到 */
+export async function archiveNote(id: string): Promise<void> {
+  const note = state.notes.find((item) => item.id === id);
+  if (!note || note.archivedAt) return;
+
+  const now = Date.now();
+  await store({ ...note, archivedAt: now, updatedAt: now });
+  if (state.currentId === id) advance();
+  toast('不再复习这条了', 'ok', { label: '恢复', run: () => void unarchiveNote(id) });
+  scheduleSync();
+}
+
+export async function unarchiveNote(id: string): Promise<void> {
+  const note = state.notes.find((item) => item.id === id);
+  if (!note || !note.archivedAt) return;
+  await store({ ...note, archivedAt: null, updatedAt: Date.now() });
+  toast('恢复复习了');
+  scheduleSync();
+}
+
 export async function grade(id: string, value: Grade): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
   if (!note) return;
@@ -382,7 +407,7 @@ export function skip(): void {
 
 /** 今天没有到期的了，但用户想提前看一条 */
 export function reviewEarly(): void {
-  const pool = visibleNotes(state.notes).filter((note) => !isNew(note));
+  const pool = visibleNotes(state.notes).filter((note) => !isNew(note) && !isArchived(note));
   if (pool.length === 0) return;
   pool.sort((a, b) => a.memory.due - b.memory.due);
   const note = pool[0];
@@ -391,7 +416,7 @@ export function reviewEarly(): void {
 
 export function nextSoonest(): number | null {
   const upcoming = visibleNotes(state.notes)
-    .filter((note) => !isNew(note) && note.memory.due > Date.now())
+    .filter((note) => !isNew(note) && !isArchived(note) && note.memory.due > Date.now())
     .sort((a, b) => a.memory.due - b.memory.due);
   return upcoming[0]?.memory.due ?? null;
 }

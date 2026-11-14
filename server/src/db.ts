@@ -36,6 +36,7 @@ db.exec(`
     deleted_at   INTEGER,
     memory       TEXT NOT NULL,
     review_count INTEGER NOT NULL DEFAULT 0,
+    archived_at  INTEGER,
     seq          INTEGER NOT NULL,
     PRIMARY KEY (user_id, id)
   );
@@ -54,6 +55,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_history_note ON note_history(user_id, note_id, replaced_at DESC);
 `);
 
+// CREATE TABLE IF NOT EXISTS 不会给已存在的表补字段，老库要单独迁移
+const noteColumns = db.prepare('PRAGMA table_info(notes)').all() as { name: string }[];
+if (!noteColumns.some((column) => column.name === 'archived_at')) {
+  db.exec('ALTER TABLE notes ADD COLUMN archived_at INTEGER');
+}
+
 export interface NoteRow {
   user_id: string;
   id: string;
@@ -63,6 +70,7 @@ export interface NoteRow {
   deleted_at: number | null;
   memory: string;
   review_count: number;
+  archived_at: number | null;
   seq: number;
 }
 
@@ -91,6 +99,7 @@ export function rowToNote(row: NoteRow): Note {
     deletedAt: row.deleted_at,
     memory,
     reviewCount: row.review_count,
+    archivedAt: row.archived_at ?? null,
   };
 }
 
@@ -147,8 +156,8 @@ export function getNoteRow(userId: string, id: string): NoteRow | undefined {
 
 export function insertNote(userId: string, note: Note, seq: number): void {
   db.prepare(
-    `INSERT INTO notes (user_id, id, body, created_at, updated_at, deleted_at, memory, review_count, seq)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO notes (user_id, id, body, created_at, updated_at, deleted_at, memory, review_count, archived_at, seq)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     userId,
     note.id,
@@ -158,13 +167,14 @@ export function insertNote(userId: string, note: Note, seq: number): void {
     note.deletedAt,
     JSON.stringify(note.memory),
     note.reviewCount,
+    note.archivedAt ?? null,
     seq,
   );
 }
 
 export function updateNote(userId: string, note: Note, seq: number): void {
   db.prepare(
-    `UPDATE notes SET body = ?, updated_at = ?, deleted_at = ?, memory = ?, review_count = ?, seq = ?
+    `UPDATE notes SET body = ?, updated_at = ?, deleted_at = ?, memory = ?, review_count = ?, archived_at = ?, seq = ?
      WHERE user_id = ? AND id = ?`,
   ).run(
     note.body,
@@ -172,6 +182,7 @@ export function updateNote(userId: string, note: Note, seq: number): void {
     note.deletedAt,
     JSON.stringify(note.memory),
     note.reviewCount,
+    note.archivedAt ?? null,
     seq,
     userId,
     note.id,

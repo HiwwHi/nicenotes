@@ -16,6 +16,7 @@ interface Props {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onArchive: () => void;
   related: SearchHit[];
   onJump: (id: string) => void;
   /** 正在复习的那条，流里标一下 */
@@ -30,6 +31,7 @@ export function NoteItem({
   onToggle,
   onEdit,
   onDelete,
+  onArchive,
   related,
   onJump,
   featured,
@@ -63,13 +65,20 @@ export function NoteItem({
                 <span>复习 {note.reviewCount} 次</span>
               </>
             )}
-            {!expanded && (
+            {note.archivedAt ? (
               <>
                 <span className="dot-sep" />
-                <span className="item-due">
-                  {isNew(note) ? '还没看过' : `下次 ${dueLabel(note.memory.due, now)}`}
-                </span>
+                <span className="item-archived">已归档</span>
               </>
+            ) : (
+              !expanded && (
+                <>
+                  <span className="dot-sep" />
+                  <span className="item-due">
+                    {isNew(note) ? '还没看过' : `下次 ${dueLabel(note.memory.due, now)}`}
+                  </span>
+                </>
+              )
             )}
           </span>
         </span>
@@ -115,6 +124,10 @@ export function NoteItem({
             <button type="button" className="link" onClick={onEdit}>
               <PencilIcon />
               改一下
+            </button>
+            <span className="dot-sep" />
+            <button type="button" className="link" onClick={onArchive}>
+              {note.archivedAt ? '恢复复习' : '不再复习'}
             </button>
             <span className="dot-sep" />
             <button

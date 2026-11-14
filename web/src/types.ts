@@ -23,6 +23,8 @@ export interface Note {
   deletedAt: number | null;
   memory: Memory;
   reviewCount: number;
+  /** 归档时间。归档后不再进复习队列，但笔记仍然留在流里 */
+  archivedAt?: number | null;
 }
 
 /** 本地存储的笔记，多记一个「上次同步时看到的服务端版本」 */

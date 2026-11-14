@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
-import { toast } from '../store';
+import { archiveNote, toast } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
@@ -57,22 +57,25 @@ export function Stream({
    * 权重按「多久没碰过」算，越久越容易被抽中 —— 跟你原来那版加权选题是同一个道理。
    */
   const peek = useMemo(() => {
-    if (review || alive.length === 0) return null;
-    if (alive.length === 1) return alive[0] ?? null;
+    if (review) return null;
+
+    const pool = alive.filter((note) => !note.archivedAt);
+    if (pool.length === 0) return null;
+    if (pool.length === 1) return pool[0] ?? null;
 
     const day = 86_400_000;
-    const weights = alive.map((note) => {
+    const weights = pool.map((note) => {
       const touched = Math.max(note.updatedAt, note.createdAt);
       return 1 + Math.min(30, Math.max(0, (now - touched) / day));
     });
     const total = weights.reduce((sum, weight) => sum + weight, 0);
 
     let roll = Math.random() * total;
-    for (let i = 0; i < alive.length; i += 1) {
+    for (let i = 0; i < pool.length; i += 1) {
       roll -= weights[i] ?? 0;
-      if (roll <= 0) return alive[i] ?? null;
+      if (roll <= 0) return pool[i] ?? null;
     }
-    return alive[alive.length - 1] ?? null;
+    return pool[pool.length - 1] ?? null;
   }, [review, alive, now]);
 
   /** 第一屏那张已经在最显眼的位置了，流里不再出现第二次 */
@@ -180,6 +183,7 @@ export function Stream({
                 onToggle={() => toggle(hit.note.id)}
                 onEdit={() => onEdit(hit.note)}
                 onDelete={() => onDelete(hit.note.id)}
+                onArchive={() => void archiveNote(hit.note.id)}
                 related={openId === hit.note.id ? relatedHits : []}
                 onJump={jump}
               />
@@ -245,6 +249,7 @@ export function Stream({
                       onToggle={() => toggle(note.id)}
                       onEdit={() => onEdit(note)}
                       onDelete={() => onDelete(note.id)}
+                      onArchive={() => void archiveNote(note.id)}
                       related={openId === note.id ? relatedHits : []}
                       onJump={jump}
                     />

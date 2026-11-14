@@ -25,6 +25,8 @@ export interface Note {
   deletedAt: number | null;
   memory: Memory;
   reviewCount: number;
+  /** 归档时间。归档后不再进复习队列，但笔记本身还留着 */
+  archivedAt: number | null;
 }
 
 /** 客户端推给服务端的笔记，多带一个「我上次同步时看到的 updatedAt」 */

@@ -1054,9 +1054,15 @@ mark.hit {
 .item-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 6px;
   gap: 2px;
   margin-top: 14px;
   color: var(--ink-3);
+}
+
+.item-archived {
+  color: var(--mid);
 }
 
 /* 搜索没有结果 */

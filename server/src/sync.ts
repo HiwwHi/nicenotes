@@ -56,6 +56,9 @@ function normalizeNote(input: SyncNote, now: number): Note | null {
     deletedAt: input.deletedAt == null ? null : clamp(Number(input.deletedAt), 0, Number.MAX_SAFE_INTEGER),
     memory: normalizeMemory(input.memory, now),
     reviewCount: clamp(Number(input.reviewCount ?? 0), 0, 1_000_000),
+    // 老客户端不会推这个字段，缺了就当没归档
+    archivedAt:
+      input.archivedAt == null ? null : clamp(Number(input.archivedAt), 0, Number.MAX_SAFE_INTEGER),
   };
 }
 
