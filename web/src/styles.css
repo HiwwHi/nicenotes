@@ -683,6 +683,26 @@ mark.hit {
   letter-spacing: 0.05em;
 }
 
+.stream-tools {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.stream-select {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.stream-select:hover {
+  color: var(--ink);
+}
+
 /* 按时间 / 随机 */
 .order-switch {
   display: inline-flex;
@@ -1028,6 +1048,11 @@ mark.hit {
   background: var(--bg-deep);
 }
 
+.item.is-selected,
+.item.is-selected:not(.is-open):hover {
+  background: var(--accent-soft);
+}
+
 .item.is-open {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1055,6 +1080,26 @@ mark.hit {
   background: var(--line-strong);
   flex-shrink: 0;
   transition: background 0.15s;
+}
+
+/* 多选模式下的勾选圈，占位宽度和圆点接近，切换时不至于让文字跳太多 */
+.item-check {
+  width: 16px;
+  height: 16px;
+  margin: 2px 10px 0 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--accent-ink);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.item-check.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .item:hover .item-dot {
@@ -1631,6 +1676,51 @@ mark.hit {
 }
 
 /* ---------------------------------------------------------------- 提示与状态 */
+
+/* 底部那条操作条会挡住最后几条，给列表留出空间 */
+.is-selecting .timeline {
+  padding-bottom: 76px;
+}
+
+/* 多选时浮在底部的操作条 */
+.bulk-bar {  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 70;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 9px 12px 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  max-width: calc(100vw - 32px);
+}
+
+.bulk-count {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-actions .btn-sm {
+  padding: 4px 11px;
+  font-size: 12.5px;
+}
+
+.bulk-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 .toast {
   position: fixed;

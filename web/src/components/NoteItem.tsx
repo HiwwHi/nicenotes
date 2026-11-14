@@ -4,7 +4,7 @@ import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
 import { snippet, type SearchHit } from '../lib/search';
 import type { StoredNote } from '../types';
-import { LinkIcon, PencilIcon, TrashIcon } from './Icons';
+import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from './Icons';
 import { Marked, Rich } from './Rich';
 
 interface Props {
@@ -22,6 +22,10 @@ interface Props {
   onJump: (id: string) => void;
   /** 正在复习的那条，流里标一下 */
   featured?: boolean;
+  /** 多选模式：点整条是勾选，不是展开 */
+  selectMode?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
 export function NoteItem({
@@ -36,6 +40,9 @@ export function NoteItem({
   related,
   onJump,
   featured,
+  selectMode,
+  selected,
+  onSelect,
 }: Props) {
   const now = Date.now();
   const { title, rest } = splitBody(note.body);
@@ -55,9 +62,21 @@ export function NoteItem({
   }, [expanded, note.id]);
 
   return (
-    <li id={`note-${note.id}`} className={`item ${expanded ? 'is-open' : ''} ${featured ? 'is-featured' : ''}`}>
-      <button type="button" className="item-head" onClick={onToggle} aria-expanded={expanded}>
-        <span className="item-dot" aria-hidden="true" />
+    <li id={`note-${note.id}`} className={`item ${expanded && !selectMode ? 'is-open' : ''} ${featured ? 'is-featured' : ''} ${selected ? 'is-selected' : ''}`}>
+      <button
+        type="button"
+        className="item-head"
+        onClick={selectMode ? onSelect : onToggle}
+        aria-expanded={selectMode ? undefined : expanded}
+        aria-pressed={selectMode ? Boolean(selected) : undefined}
+      >
+        {selectMode ? (
+          <span className={`item-check ${selected ? 'is-on' : ''}`} aria-hidden="true">
+            {selected && <CheckIcon size={11} />}
+          </span>
+        ) : (
+          <span className="item-dot" aria-hidden="true" />
+        )}
 
         <span className="item-text">
           <span className="item-title">

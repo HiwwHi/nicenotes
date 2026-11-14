@@ -8,6 +8,14 @@ const stroke = {
 
 type Props = { size?: number; className?: string };
 
+export function CheckIcon({ size = 12, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M4.5 10.5l3.6 3.6 7.4-7.8" {...stroke} strokeWidth={2.2} />
+    </svg>
+  );
+}
+
 export function PlusIcon({ size = 16, className }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} className={className} aria-hidden="true">

@@ -3,7 +3,7 @@ import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
 import { shuffle } from '../lib/shuffle';
-import { archiveNote, toast } from '../store';
+import { archiveNote, archiveNotes, removeNotes, toast } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
@@ -61,6 +61,24 @@ export function Stream({
     }
   });
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1_000_000_000));
+
+  /** 多选：整理导入进来的一批笔记时，逐条点太慢 */
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const exitSelect = useCallback(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, []);
 
   const changeOrder = useCallback((next: Order) => {
     setOrder(next);
@@ -200,8 +218,21 @@ export function Stream({
       onArchive={() => void archiveNote(note.id)}
       related={openId === note.id ? relatedHits : []}
       onJump={jump}
+      selectMode={selectMode}
+      selected={selected.has(note.id)}
+      onSelect={() => toggleSelect(note.id)}
     />
   );
+
+  async function bulkArchive() {
+    await archiveNotes([...selected]);
+    exitSelect();
+  }
+
+  async function bulkDelete() {
+    await removeNotes([...selected]);
+    exitSelect();
+  }
 
   if (searching && result) {
     const count = result.hits.length;
@@ -251,7 +282,7 @@ export function Stream({
   }
 
   return (
-    <div className="stream">
+    <div className={`stream ${selectMode ? 'is-selecting' : ''}`}>
       {review ? (
         <div className="lead">
           <span className="lead-tag">{review.kind === 'new' ? '第一次见' : '该回来看看了'}</span>
@@ -297,22 +328,32 @@ export function Stream({
               {alive.length} 条
             </span>
 
-            <div className="order-switch" role="group" aria-label="浏览顺序">
+            <div className="stream-tools">
+              <div className="order-switch" role="group" aria-label="浏览顺序">
+                <button
+                  type="button"
+                  className={order === 'time' ? 'is-active' : ''}
+                  onClick={() => changeOrder('time')}
+                  title="按写作时间，像一份不断往下追加的文件"
+                >
+                  按时间
+                </button>
+                <button
+                  type="button"
+                  className={order === 'random' ? 'is-active' : ''}
+                  onClick={() => changeOrder('random')}
+                  title="打散了看，再点一下换一批"
+                >
+                  随机
+                </button>
+              </div>
+
               <button
                 type="button"
-                className={order === 'time' ? 'is-active' : ''}
-                onClick={() => changeOrder('time')}
-                title="按写作时间，像一份不断往下追加的文件"
+                className="stream-select"
+                onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
               >
-                按时间
-              </button>
-              <button
-                type="button"
-                className={order === 'random' ? 'is-active' : ''}
-                onClick={() => changeOrder('random')}
-                title="打散了看，再点一下换一批"
-              >
-                随机
+                {selectMode ? '取消' : '选择'}
               </button>
             </div>
           </div>
@@ -330,6 +371,47 @@ export function Stream({
             </ul>
           )}
         </>
+      )}
+
+      {selectMode && (
+        <div className="bulk-bar">
+          <span className="bulk-count">已选 {selected.size} 条</span>
+
+          <div className="bulk-actions">
+            <button
+              type="button"
+              className="link"
+              onClick={() =>
+                setSelected(
+                  selected.size === streamed.length
+                    ? new Set()
+                    : new Set(streamed.map((note) => note.id)),
+                )
+              }
+            >
+              {selected.size === streamed.length && streamed.length > 0 ? '取消全选' : '全选'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={selected.size === 0}
+              onClick={() => void bulkArchive()}
+            >
+              归档
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm link-danger"
+              disabled={selected.size === 0}
+              onClick={() => void bulkDelete()}
+            >
+              删除
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={exitSelect}>
+              完成
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

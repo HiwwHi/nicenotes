@@ -370,6 +370,65 @@ export async function unarchiveNote(id: string): Promise<void> {
   scheduleSync();
 }
 
+/** 批量改若干条笔记的共同字段 */
+async function patchNotes(ids: string[], patch: Partial<StoredNote>): Promise<StoredNote[]> {
+  const wanted = new Set(ids);
+  const now = Date.now();
+  const changed: StoredNote[] = [];
+
+  const next = state.notes.map((note) => {
+    if (!wanted.has(note.id)) return note;
+    const updated = { ...note, ...patch, updatedAt: now };
+    changed.push(updated);
+    return updated;
+  });
+
+  if (changed.length === 0) return [];
+  set({ notes: next });
+  await local.putNotes(changed);
+  return changed;
+}
+
+export async function removeNotes(ids: string[]): Promise<number> {
+  const changed = await patchNotes(ids, { deletedAt: Date.now() });
+  if (changed.length === 0) return 0;
+
+  if (state.currentId && ids.includes(state.currentId)) advance();
+  toast(`删掉 ${changed.length} 条`, 'ok', {
+    label: '撤销',
+    run: () => void restoreNotes(changed.map((note) => note.id)),
+  });
+  scheduleSync();
+  return changed.length;
+}
+
+export async function archiveNotes(ids: string[]): Promise<number> {
+  const changed = await patchNotes(ids, { archivedAt: Date.now() });
+  if (changed.length === 0) return 0;
+
+  if (state.currentId && ids.includes(state.currentId)) advance();
+  toast(`归档了 ${changed.length} 条`, 'ok', {
+    label: '撤销',
+    run: () => void unarchiveNotes(changed.map((note) => note.id)),
+  });
+  scheduleSync();
+  return changed.length;
+}
+
+export async function restoreNotes(ids: string[]): Promise<void> {
+  const changed = await patchNotes(ids, { deletedAt: null });
+  if (changed.length === 0) return;
+  toast(`恢复了 ${changed.length} 条`);
+  scheduleSync();
+}
+
+export async function unarchiveNotes(ids: string[]): Promise<void> {
+  const changed = await patchNotes(ids, { archivedAt: null });
+  if (changed.length === 0) return;
+  toast(`恢复了 ${changed.length} 条的复习`);
+  scheduleSync();
+}
+
 export async function grade(id: string, value: Grade): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
   if (!note) return;
