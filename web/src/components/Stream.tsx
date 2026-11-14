@@ -135,6 +135,12 @@ export function Stream({
     return [...buckets.values()];
   }, [streamed, order, now]);
 
+  /** 全库还是示例笔记 —— 这时候该给一句说明，不然第一次打开不知道能干什么 */
+  const demoOnly = useMemo(
+    () => alive.length > 0 && alive.every((note) => note.origin === 'demo'),
+    [alive],
+  );
+
   const relatedHits = useMemo(() => {
     if (!openId) return [];
     const note = alive.find((item) => item.id === openId);
@@ -274,6 +280,12 @@ export function Stream({
           </span>
           <span className="rest-line" />
         </div>
+      )}
+
+      {demoOnly && (
+        <p className="intro">
+          这些是示例，随便改、随便删。按 <kbd>N</kbd> 记一条你自己的，按 <kbd>/</kbd> 搜任何词。
+        </p>
       )}
 
       {streamed.length > 0 && (

@@ -642,6 +642,19 @@ mark.hit {
   box-shadow: var(--shadow-sm);
 }
 
+/* 全库都是示例时的那句说明 */
+.intro {
+  margin: 26px 0 0;
+  padding: 11px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.8;
+  text-align: center;
+  text-wrap: pretty;
+}
+
 /* 今天的那条：整个页面最该被看见的东西 */
 
 .lead {
