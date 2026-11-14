@@ -8,6 +8,7 @@
 ![license](https://img.shields.io/badge/license-MIT-8F5B2E)
 ![local first](https://img.shields.io/badge/local--first-yes-3F6B4F)
 ![no native deps](https://img.shields.io/badge/backend-zero%20native%20deps-A8792B)
+[![demo](https://img.shields.io/badge/demo-live-3F6B4F)](https://hiwwhi.github.io/nicenotes/)
 
 ![First screen](docs/shot-stream.png)
 
@@ -157,7 +158,9 @@ npm start          # the backend also serves the built frontend, single port
 
 ### Live demo
 
-Once the repository is on GitHub, `pages.yml` publishes a purely static build to GitHub Pages. That build **has no backend** — the sync UI hides itself and everything else works, which is enough to show the interface and interactions are real. For sync, run `docker compose up` yourself.
+**<https://hiwwhi.github.io/nicenotes/>**
+
+A purely static build, published by `pages.yml` on every push to `main`. It **has no backend** — the sync UI hides itself and everything else works, which is enough to show the interface and interactions are real. For sync, run `docker compose up` yourself.
 
 ## Keyboard shortcuts
 

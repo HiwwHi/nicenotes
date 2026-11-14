@@ -8,6 +8,7 @@
 ![license](https://img.shields.io/badge/license-MIT-8F5B2E)
 ![offline first](https://img.shields.io/badge/local--first-yes-3F6B4F)
 ![no native deps](https://img.shields.io/badge/backend-zero%20native%20deps-A8792B)
+[![demo](https://img.shields.io/badge/demo-live-3F6B4F)](https://hiwwhi.github.io/nicenotes/)
 
 ![首屏](docs/shot-stream.png)
 
@@ -157,7 +158,9 @@ npm start          # 后端同时托管前端静态文件，只有一个端口
 
 ### 演示站
 
-推上 GitHub 后，`pages.yml` 会自动发布一个纯静态版本到 GitHub Pages。
+**<https://hiwwhi.github.io/nicenotes/>**
+
+`pages.yml` 在每次推送到 `main` 时自动发布纯静态版本。
 那个版本**没有后端**，同步功能会自动隐藏，其余功能完整——它能证明界面和交互是真的，同步得自己 `docker compose up` 才有。
 
 ## 快捷键
