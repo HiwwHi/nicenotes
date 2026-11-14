@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
-import { dayGroupLabel, dayKey, dueLabel } from '../lib/date';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
+import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
+import { toast } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
@@ -101,12 +103,42 @@ export function Stream({
     return note ? relatedNotes(note, alive) : [];
   }, [openId, alive]);
 
-  function jump(id: string) {
+  const jump = useCallback((id: string) => {
     setOpenId(id);
     requestAnimationFrame(() => {
       document.getElementById(`note-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-  }
+  }, []);
+
+  /** 正文里点了 [[某条笔记]] 就跳过去；找不到就说一声，不装作没发生 */
+  useEffect(() => {
+    function onOpen(event: Event) {
+      const wanted = (event as CustomEvent<{ title?: string }>).detail?.title?.trim();
+      if (!wanted) return;
+
+      const heading = (note: StoredNote) => plainText(splitBody(note.body).title);
+      const target =
+        alive.find((note) => heading(note) === wanted) ??
+        alive.find((note) => heading(note).includes(wanted));
+
+      if (!target) {
+        toast(`没有找到「${wanted}」`, 'warn');
+        return;
+      }
+
+      // 第一屏那张卡片不在流里，滚回顶部就是它
+      if (target.id === heroId) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      if (searching) onClearQuery();
+      window.setTimeout(() => jump(target.id), searching ? 140 : 0);
+    }
+
+    window.addEventListener('nicenotes:open-note', onOpen);
+    return () => window.removeEventListener('nicenotes:open-note', onOpen);
+  }, [alive, heroId, jump, onClearQuery, searching]);
 
   function toggle(id: string) {
     setOpenId((current) => (current === id ? null : id));

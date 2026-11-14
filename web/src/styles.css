@@ -159,6 +159,25 @@ mark.hit {
   line-height: inherit;
 }
 
+/* 指向另一条笔记的 [[链接]] */
+.wikilink {
+  display: inline;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--accent-line);
+  transition: border-bottom-color 0.15s;
+}
+
+.wikilink:hover {
+  border-bottom-style: solid;
+  border-bottom-color: var(--accent);
+}
+
 .code[data-lang]::before {
   content: attr(data-lang);
   position: absolute;

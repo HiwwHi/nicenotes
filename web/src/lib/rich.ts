@@ -9,11 +9,14 @@
 export type Segment =
   | { kind: 'text'; text: string }
   | { kind: 'inline'; text: string }
-  | { kind: 'block'; text: string; lang: string };
+  | { kind: 'block'; text: string; lang: string }
+  /** [[另一条笔记的标题]] */
+  | { kind: 'wiki'; text: string };
 
 const FENCE_OPEN = /^```([\w+#.-]*)\s*$/;
 const FENCE_CLOSE = /^```\s*$/;
-const INLINE = /`([^`\n]+)`/g;
+const INLINE = /`([^`\n]+)`|\[\[([^[\]\n]+)\]\]/g;
+const WIKI = /\[\[([^[\]\n]+)\]\]/g;
 
 function splitInline(text: string): Segment[] {
   const parts: Segment[] = [];
@@ -23,7 +26,16 @@ function splitInline(text: string): Segment[] {
   let found: RegExpExecArray | null;
   while ((found = INLINE.exec(text)) !== null) {
     if (found.index > cursor) parts.push({ kind: 'text', text: text.slice(cursor, found.index) });
-    parts.push({ kind: 'inline', text: found[1] ?? '' });
+
+    if (found[1] !== undefined) {
+      parts.push({ kind: 'inline', text: found[1] });
+    } else if (found[2] && found[2].trim()) {
+      parts.push({ kind: 'wiki', text: found[2].trim() });
+    } else {
+      // 空链接之类的，原样留着
+      parts.push({ kind: 'text', text: found[0] });
+    }
+
     cursor = found.index + found[0].length;
   }
   if (cursor < text.length) parts.push({ kind: 'text', text: text.slice(cursor) });
@@ -84,6 +96,7 @@ export function plainText(input: string): string {
   return input
     .replace(/^```[\w+#.-]*\s*$/gm, ' ')
     .replace(/```/g, ' ')
+    .replace(WIKI, '$1')
     .replace(/`([^`\n]+)`/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();

@@ -23,12 +23,31 @@ export function Marked({ text, marks }: { text: string; marks: string[] }) {
 }
 
 /** 带代码的正文：`行内` 和 ``` 围栏块 */
+/** 点内链时通知外面去跳转。用事件而不是一层层传 props，渲染组件不该关心导航 */
+const OPEN_EVENT = 'nicenotes:open-note';
+
 export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
   const segments = parseRich(text);
 
   return (
     <>
       {segments.map((segment, index) => {
+        if (segment.kind === 'wiki') {
+          return (
+            <button
+              key={index}
+              type="button"
+              className="wikilink"
+              title={`跳到「${segment.text}」`}
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { title: segment.text } }))
+              }
+            >
+              {segment.text}
+            </button>
+          );
+        }
+
         if (segment.kind === 'inline') {
           return (
             <code key={index} className="icode">

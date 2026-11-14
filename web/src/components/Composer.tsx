@@ -97,7 +97,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
               setText(area.value);
             }
           }}
-          placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n要贴命令或 log，用三个反引号包起来，它会显示成代码块。'}
+          placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n贴命令或 log 用三个反引号包起来；想连到另一条笔记，写 [[那条的标题]]。'}
           rows={8}
         />
 
