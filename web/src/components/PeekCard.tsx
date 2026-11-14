@@ -1,6 +1,8 @@
 import { pastLabel, splitBody } from '../lib/date';
+import { plainText } from '../lib/rich';
 import type { StoredNote } from '../types';
 import { PencilIcon } from './Icons';
+import { Rich } from './Rich';
 
 interface Props {
   note: StoredNote;
@@ -21,8 +23,12 @@ export function PeekCard({ note, onEdit }: Props) {
         <span className="review-meta-text">随手翻到 · {pastLabel(note.createdAt, now)}记的</span>
       </div>
 
-      <h1 className="card-title">{title}</h1>
-      {rest && <div className="card-rest">{rest}</div>}
+      <h1 className="card-title">{plainText(title)}</h1>
+      {rest && (
+        <div className="card-rest">
+          <Rich text={rest} />
+        </div>
+      )}
 
       <div className="review-foot">
         <button type="button" className="link" onClick={onEdit}>

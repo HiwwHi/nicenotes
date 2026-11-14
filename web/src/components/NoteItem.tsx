@@ -1,9 +1,10 @@
-import { Fragment } from 'react';
 import { dueLabel, pastLabel, splitBody } from '../lib/date';
+import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
-import { highlight, type SearchHit } from '../lib/search';
+import type { SearchHit } from '../lib/search';
 import type { StoredNote } from '../types';
 import { LinkIcon, PencilIcon, TrashIcon } from './Icons';
+import { Marked, Rich } from './Rich';
 
 interface Props {
   note: StoredNote;
@@ -21,23 +22,6 @@ interface Props {
   featured?: boolean;
 }
 
-function Marked({ text, marks }: { text: string; marks: string[] }) {
-  if (marks.length === 0) return <>{text}</>;
-  return (
-    <>
-      {highlight(text, marks).map((part, index) =>
-        part.hit ? (
-          <mark key={index} className="hit">
-            {part.text}
-          </mark>
-        ) : (
-          <Fragment key={index}>{part.text}</Fragment>
-        ),
-      )}
-    </>
-  );
-}
-
 export function NoteItem({
   note,
   marks,
@@ -52,7 +36,8 @@ export function NoteItem({
 }: Props) {
   const now = Date.now();
   const { title, rest } = splitBody(note.body);
-  const preview = rest.replace(/\s+/g, ' ').trim();
+  const heading = plainText(title);
+  const preview = plainText(rest);
 
   return (
     <li id={`note-${note.id}`} className={`item ${expanded ? 'is-open' : ''} ${featured ? 'is-featured' : ''}`}>
@@ -61,7 +46,7 @@ export function NoteItem({
 
         <span className="item-text">
           <span className="item-title">
-            <Marked text={title || '(空)'} marks={marks} />
+            <Marked text={heading || '(空)'} marks={marks} />
           </span>
 
           {preview && (
@@ -100,7 +85,7 @@ export function NoteItem({
         <div className="item-open">
           {rest && (
             <div className="item-body">
-              <Marked text={rest} marks={marks} />
+              <Rich text={rest} marks={marks} />
             </div>
           )}
 
@@ -112,7 +97,7 @@ export function NoteItem({
               </span>
               <ul>
                 {related.map((hit) => {
-                  const other = splitBody(hit.note.body).title;
+                  const other = plainText(splitBody(hit.note.body).title);
                   return (
                     <li key={hit.note.id}>
                       <button type="button" onClick={() => onJump(hit.note.id)}>

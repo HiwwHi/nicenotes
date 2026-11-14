@@ -43,6 +43,18 @@ If you cannot recall it, expand it and answer one question: how much did you rem
 
 The interval stretches with every review, up to one year. The next review time is printed right under the buttons — that one line of small text is the most important feedback in the whole product. It is what makes you believe the system is really on top of this.
 
+### Code and logs do not read as prose
+
+Anything wrapped in backticks renders as a monospaced fragment, and three backticks fence off a whole block:
+
+> 查有没有 `-EPROBE_DEFER` 反复重试
+
+Return codes, register addresses and command names stand out from the sentence. A dmesg excerpt keeps its original indentation instead of melting into wrapped text.
+
+Why not full Markdown: the `*` and `-` you type casually would turn into italics and lists, and the only thing in a note that genuinely needs layout is code.
+
+![Code block](docs/shot-code-block.png)
+
 ## Search does not require the exact words
 
 Search in most note apps is substring matching: mistype one character, or remember the meaning instead of the wording, and you get nothing.

@@ -62,14 +62,28 @@ interface Doc {
   note: StoredNote;
   counts: Map<string, number>;
   titleCounts: Map<string, number>;
+  /** 英文词表，用来做前缀匹配（initcall → initcall_debug） */
+  words: string[];
+  /** 单个汉字计数。二元组索引里没有单字，搜「网」也得能找到「以太网」 */
+  chars: Map<string, number>;
   length: number;
-  searchable: string;
 }
+
+const CJK_CHAR = /[\u4e00-\u9fff]/;
+const PLAIN_WORD = /^[a-z0-9_.#+-]+$/;
 
 function toDoc(note: StoredNote): Doc {
   const counts = new Map<string, number>();
+  const words: string[] = [];
+
   for (const token of tokenize(note.body)) {
     counts.set(token, (counts.get(token) ?? 0) + 1);
+    if (PLAIN_WORD.test(token)) words.push(token);
+  }
+
+  const chars = new Map<string, number>();
+  for (const ch of note.body.toLowerCase()) {
+    if (CJK_CHAR.test(ch)) chars.set(ch, (chars.get(ch) ?? 0) + 1);
   }
 
   const firstBreak = note.body.indexOf('\n');
@@ -83,9 +97,28 @@ function toDoc(note: StoredNote): Doc {
     note,
     counts,
     titleCounts,
+    words,
+    chars,
     length: Math.max(24, note.body.length),
-    searchable: note.body.toLowerCase(),
   };
+}
+
+/** 某个词在这篇笔记里出现几次。完全没命中时再做两级退让 */
+function termFreq(doc: Doc, term: string): number {
+  const direct = doc.counts.get(term);
+  if (direct) return direct;
+
+  // 单个汉字：bigram 索引里不会有它
+  if (term.length === 1 && CJK_CHAR.test(term)) return doc.chars.get(term) ?? 0;
+
+  // 英文前缀：initcall 应该能找到 initcall_debug
+  if (term.length >= 3 && /^[a-z0-9]/.test(term)) {
+    let total = 0;
+    for (const word of doc.words) if (word.startsWith(term)) total += 1;
+    return total;
+  }
+
+  return 0;
 }
 
 const TITLE_WEIGHT = 2.4;
@@ -121,7 +154,7 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
   const df = new Map<string, number>();
   for (const term of allTerms) {
     let count = 0;
-    for (const doc of docs) if (doc.counts.has(term)) count += 1;
+    for (const doc of docs) if (termFreq(doc, term) > 0) count += 1;
     df.set(term, count);
   }
 
@@ -136,7 +169,7 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
       let groupScore = 0;
       let groupHits = 0;
       for (const term of group) {
-        const tf = doc.counts.get(term) ?? 0;
+        const tf = termFreq(doc, term);
         if (tf === 0) continue;
         groupHits += 1;
         matched.add(term);
@@ -206,7 +239,7 @@ export function relatedNotes(note: StoredNote, notes: StoredNote[], limit = 3): 
   const df = new Map<string, number>();
   for (const term of terms) {
     let count = 0;
-    for (const doc of docs) if (doc.counts.has(term)) count += 1;
+    for (const doc of docs) if (termFreq(doc, term) > 0) count += 1;
     df.set(term, count);
   }
 
@@ -224,7 +257,7 @@ export function relatedNotes(note: StoredNote, notes: StoredNote[], limit = 3): 
       let sum = 0;
       const matched: string[] = [];
       for (const item of weighted) {
-        if (!doc.counts.has(item.term)) continue;
+        if (termFreq(doc, item.term) === 0) continue;
         hits += 1;
         sum += item.idf;
         matched.push(item.term);

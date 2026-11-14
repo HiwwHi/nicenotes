@@ -121,6 +121,57 @@ mark.hit {
   -webkit-box-decoration-break: clone;
 }
 
+/* ---------------------------------------------------------------- 代码 */
+
+.icode {
+  font-family: var(--font-mono);
+  font-size: 0.87em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line-soft);
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.code {
+  position: relative;
+  margin: 15px 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 2;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+
+.code code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.code[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 7px;
+  right: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 /* ---------------------------------------------------------------- 骨架 */
 
 .app {

@@ -1,6 +1,8 @@
 import { dueLabel, pastLabel, splitBody } from '../lib/date';
+import { plainText } from '../lib/rich';
 import { GRADE_META, nextDue } from '../lib/scheduler';
 import type { Grade, Note } from '../types';
+import { Rich } from './Rich';
 
 interface Props {
   note: Note;
@@ -35,14 +37,18 @@ export function ReviewCard({ note, kind, revealed, onReveal, onGrade, onEdit, on
       </div>
 
       <article className={`card ${shown ? 'is-shown' : ''}`}>
-        <h1 className="card-title">{title}</h1>
+        <h1 className="card-title">{plainText(title)}</h1>
 
         {needsReveal &&
           (revealed ? (
-            <div className="card-rest">{rest}</div>
+            <div className="card-rest">
+              <Rich text={rest} />
+            </div>
           ) : (
             <div className="card-veil" aria-hidden="true">
-              <p>{rest}</p>
+              <p>
+                <Rich text={rest} />
+              </p>
               <div className="card-veil-fade" />
             </div>
           ))}

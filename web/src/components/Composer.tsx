@@ -88,7 +88,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
               void submit();
             }
           }}
-          placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n比如：probe 慢先怀疑 regulator 上电时序，别急着怪内核。'}
+          placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n要贴命令或 log，用三个反引号包起来，它会显示成代码块。'}
           rows={8}
         />
 
