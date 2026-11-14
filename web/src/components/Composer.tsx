@@ -86,6 +86,15 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
               void submit();
+              return;
+            }
+
+            // 写代码时 Tab 该缩进，而不是把焦点跳到下一个控件上
+            if (event.key === 'Tab') {
+              event.preventDefault();
+              const area = event.currentTarget;
+              area.setRangeText('  ', area.selectionStart, area.selectionEnd, 'end');
+              setText(area.value);
             }
           }}
           placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n要贴命令或 log，用三个反引号包起来，它会显示成代码块。'}
