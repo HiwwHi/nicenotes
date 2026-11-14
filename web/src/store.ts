@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, hasBackend } from './lib/api';
-import { dayKey } from './lib/date';
+import { dayKey, splitBody } from './lib/date';
 import * as local from './lib/db';
 import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
 import { applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
@@ -585,9 +585,7 @@ export async function importJson(raw: string): Promise<number> {
 export interface ImportResult {
   added: number;
   skipped: number;
-}
-
-/**
+}/**
  * 批量导入 Markdown。一个文件里如果有 `## ` 分节，会拆成多条。
  * 内容指纹相同的直接跳过 —— 同一个文件导两次不该变成两份。
  */
@@ -638,4 +636,20 @@ export async function importMarkdownFiles(
   }
 
   return { added: incoming.length, skipped };
+}
+
+/**
+ * 导出成 Markdown。格式刻意和导入规则对齐：一条笔记就是 `## 标题` 加正文，
+ * 所以这个文件能原样导回来，不会被拆散或合并。
+ */
+export function buildMarkdown(): string {
+  const notes = visibleNotes(state.notes).sort((a, b) => a.createdAt - b.createdAt);
+
+  return notes
+    .map((note) => {
+      const { title, rest } = splitBody(note.body);
+      const heading = `## ${title || '未命名'}`;
+      return rest ? `${heading}\n\n${rest}` : heading;
+    })
+    .join('\n\n');
 }
