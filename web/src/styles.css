@@ -290,8 +290,9 @@ mark.hit {
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 60px;
-  padding: 0 20px;
+  /* iPhone 全屏（PWA）时顶栏要躲开刘海和状态栏 */
+  height: calc(60px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 20px 0;
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: saturate(180%) blur(12px);
@@ -877,6 +878,8 @@ mark.hit {
   color: var(--accent);
   font-size: 13px;
   cursor: pointer;
+  /* 窄屏上不加这句，「想不起来，看内容」会被挤成两行 */
+  white-space: nowrap;
   box-shadow: var(--shadow-sm);
   transition: background 0.15s, transform 0.1s;
 }
@@ -1697,9 +1700,10 @@ mark.hit {
 }
 
 /* 多选时浮在底部的操作条 */
-.bulk-bar {  position: fixed;
+.bulk-bar {
+  position: fixed;
   left: 50%;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   z-index: 70;
   transform: translateX(-50%);
   display: flex;
@@ -1739,7 +1743,8 @@ mark.hit {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 30px;
+  /* 躲开 iPhone 底部的横条 */
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
   z-index: 80;
   transform: translateX(-50%);
   display: flex;
@@ -1831,11 +1836,16 @@ mark.hit {
 @media (max-width: 720px) {
   .top {
     gap: 8px;
-    padding: 0 12px;
-    height: 56px;
+    padding: env(safe-area-inset-top, 0px) 12px 0;
+    height: calc(56px + env(safe-area-inset-top, 0px));
   }
 
   .brand-name {
+    display: none;
+  }
+
+  /* 手机上没物理键盘，这个提示只会挤占按钮宽度 */
+  .reveal-btn kbd {
     display: none;
   }
 
