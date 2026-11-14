@@ -8,6 +8,7 @@ import { isNew } from './lib/scheduler';
 import { applyTheme, readTheme, type Theme } from './lib/theme';
 import {
   addNote,
+  dismissToast,
   editNote,
   grade,
   init,
@@ -263,7 +264,20 @@ export default function App() {
 
       {app.toast && (
         <div className={`toast toast-${app.toast.tone}`} key={app.toast.id} role="status">
-          {app.toast.text}
+          <span className="toast-text">{app.toast.text}</span>
+          {app.toast.action && (
+            <button
+              type="button"
+              className="toast-action"
+              onClick={() => {
+                const run = app.toast?.action?.run;
+                dismissToast();
+                run?.();
+              }}
+            >
+              {app.toast.action.label}
+            </button>
+          )}
         </div>
       )}
     </div>

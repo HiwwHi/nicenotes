@@ -14,6 +14,8 @@ export interface Toast {
   id: number;
   text: string;
   tone: 'ok' | 'warn' | 'error';
+  /** 可选的操作按钮，比如删除后的「撤销」 */
+  action?: { label: string; run: () => void };
 }
 
 export interface AppState {
@@ -74,13 +76,22 @@ export function useApp(): AppState {
 let toastSeq = 0;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function toast(text: string, tone: Toast['tone'] = 'ok'): void {
+export function toast(text: string, tone: Toast['tone'] = 'ok', action?: Toast['action']): void {
   const id = ++toastSeq;
-  set({ toast: { id, text, tone } });
+  set({ toast: { id, text, tone, action } });
   if (toastTimer) clearTimeout(toastTimer);
+
+  // 带操作按钮的提示要多留一会儿，否则手还没移到按钮上就没了
+  const life = action ? 8000 : tone === 'error' ? 5200 : 3200;
   toastTimer = setTimeout(() => {
     if (state.toast?.id === id) set({ toast: null });
-  }, tone === 'error' ? 5200 : 3200);
+  }, life);
+}
+
+/** 手动关掉提示条，比如点了「撤销」之后 */
+export function dismissToast(): void {
+  if (toastTimer) clearTimeout(toastTimer);
+  set({ toast: null });
 }
 
 /* ---------------------------------------------------------------- 选题 */
@@ -321,7 +332,16 @@ export async function removeNote(id: string): Promise<void> {
   const now = Date.now();
   await store({ ...note, deletedAt: now, updatedAt: now });
   if (state.currentId === id) advance();
-  toast('删掉了');
+  toast('删掉了', 'ok', { label: '撤销', run: () => void restoreNote(id) });
+  scheduleSync();
+}
+
+/** 撤销删除。软删除的好处就在这里：内容一直没走，只是标了一笔 */
+export async function restoreNote(id: string): Promise<void> {
+  const note = state.notes.find((item) => item.id === id);
+  if (!note || !note.deletedAt) return;
+  await store({ ...note, deletedAt: null, updatedAt: Date.now() });
+  toast('恢复了');
   scheduleSync();
 }
 

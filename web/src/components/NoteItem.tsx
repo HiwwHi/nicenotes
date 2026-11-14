@@ -120,9 +120,7 @@ export function NoteItem({
             <button
               type="button"
               className="link link-danger"
-              onClick={() => {
-                if (window.confirm('删掉这条？本地会立刻消失，同步后其它设备也会消失。')) onDelete();
-              }}
+              onClick={onDelete}
             >
               <TrashIcon />
               删除
