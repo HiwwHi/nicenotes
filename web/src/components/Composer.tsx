@@ -13,12 +13,65 @@ interface Props {
   onSubmit: (text: string) => Promise<boolean>;
 }
 
+const DRAFT_KEY = 'nicenotes.draft';
+
 export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
-  const [text, setText] = useState(initial);
+  /**
+   * 新建时先把上次没写完的草稿捡回来。
+   * 手机上记东西最容易被打断（来电、切走、误关），写了一半全没了很伤。
+   */
+  const [text, setText] = useState(() => {
+    if (mode !== 'create' || initial) return initial;
+    try {
+      return localStorage.getItem(DRAFT_KEY) ?? '';
+    } catch {
+      return '';
+    }
+  });
+  const [restored] = useState(() => {
+    if (mode !== 'create' || initial) return false;
+    try {
+      return Boolean(localStorage.getItem(DRAFT_KEY));
+    } catch {
+      return false;
+    }
+  });
   const [busy, setBusy] = useState(false);
   const [versions, setVersions] = useState<HistoryVersion[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 边写边存，停手半秒就落盘
+  useEffect(() => {
+    if (mode !== 'create') return;
+
+    if (!text.trim()) {
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, text);
+      } catch {
+        /* 无痕模式写不进去 */
+      }
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [text, mode]);
+
+  function dropDraft() {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     const area = areaRef.current;
@@ -43,7 +96,10 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     setBusy(true);
     const ok = await onSubmit(text);
     setBusy(false);
-    if (ok) onClose();
+    if (ok) {
+      dropDraft();
+      onClose();
+    }
   }
 
   async function loadHistory() {
@@ -70,7 +126,10 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={mode === 'create' ? '记一条' : '编辑笔记'}>
         <header className="sheet-head">
-          <h2>{mode === 'create' ? '记一条' : '编辑'}</h2>
+          <h2>
+            {mode === 'create' ? '记一条' : '编辑'}
+            {restored && <span className="draft-badge">接着上次没写完的</span>}
+          </h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭">
             <CloseIcon />
           </button>
