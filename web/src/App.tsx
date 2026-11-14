@@ -19,6 +19,7 @@ import {
   syncNow,
   useApp,
 } from './store';
+import { clearSearches, readSearches, rememberSearch } from './lib/history';
 import type { Grade } from './types';
 
 type View = 'stream' | 'settings';
@@ -36,6 +37,35 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => readTheme());
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const [searches, setSearches] = useState<string[]>(() => readSearches());
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  // 停手一秒半才记进历史：打到一半的词不该出现在「最近搜过」里
+  useEffect(() => {
+    if (!query.trim()) return;
+    const timer = window.setTimeout(() => {
+      setSearches((current) => rememberSearch(current, query));
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  // 点别处收起历史
+  useEffect(() => {
+    if (!historyOpen) return;
+    function onDown(event: MouseEvent) {
+      if (!searchBoxRef.current?.contains(event.target as Node)) setHistoryOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [historyOpen]);
+
+  function pickSearch(text: string) {
+    setQuery(text);
+    setHistoryOpen(false);
+    searchRef.current?.focus();
+  }
 
   useEffect(() => {
     applyTheme(theme);
@@ -82,6 +112,10 @@ export default function App() {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (event.key === 'Escape') {
+        if (historyOpen) {
+          setHistoryOpen(false);
+          return;
+        }
         if (query) {
           setQuery('');
           searchRef.current?.blur();
@@ -121,7 +155,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [app.revealed, composer, current, focusSearch, openCreate, query, view]);
+  }, [app.revealed, composer, current, focusSearch, historyOpen, openCreate, query, view]);
 
   if (app.fatal) {
     return (
@@ -154,32 +188,71 @@ export default function App() {
         </button>
 
         {view === 'stream' ? (
-          <div className={`searchbar ${query ? 'has-value' : ''}`}>
-            <SearchIcon className="searchbar-icon" />
-            <input
-              ref={searchRef}
-              id="search-input"
-              className="searchbar-input"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜笔记，按相关度找"
-              spellCheck={false}
-              aria-label="搜索笔记"
-            />
-            {query ? (
-              <button
-                type="button"
-                className="searchbar-clear"
-                aria-label="清除搜索"
-                onClick={() => {
-                  setQuery('');
-                  searchRef.current?.focus();
+          <div className="searchbox" ref={searchBoxRef}>
+            <div className={`searchbar ${query ? 'has-value' : ''}`}>
+              <SearchIcon className="searchbar-icon" />
+              <input
+                ref={searchRef}
+                id="search-input"
+                className="searchbar-input"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setHistoryOpen(false);
                 }}
-              >
-                <CloseIcon size={14} />
-              </button>
-            ) : (
-              <kbd className="searchbar-key">/</kbd>
+                onFocus={() => {
+                  if (!query && searches.length > 0) setHistoryOpen(true);
+                }}
+                // 已经聚焦时再点一下不会再触发 focus，所以 click 也要管
+                onClick={() => {
+                  if (!query && searches.length > 0) setHistoryOpen(true);
+                }}
+                placeholder="搜笔记，按相关度找"
+                spellCheck={false}
+                aria-label="搜索笔记"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  className="searchbar-clear"
+                  aria-label="清除搜索"
+                  onClick={() => {
+                    setQuery('');
+                    searchRef.current?.focus();
+                  }}
+                >
+                  <CloseIcon size={14} />
+                </button>
+              ) : (
+                <kbd className="searchbar-key">/</kbd>
+              )}
+            </div>
+
+            {historyOpen && !query && searches.length > 0 && (
+              <div className="search-history">
+                <div className="search-history-head">
+                  <span>最近搜过</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearSearches();
+                      setSearches([]);
+                      setHistoryOpen(false);
+                    }}
+                  >
+                    清空
+                  </button>
+                </div>
+                <ul>
+                  {searches.map((item) => (
+                    <li key={item}>
+                      <button type="button" onClick={() => pickSearch(item)}>
+                        {item}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         ) : (
