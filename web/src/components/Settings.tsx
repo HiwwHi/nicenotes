@@ -3,7 +3,7 @@ import { hasBackend } from '../lib/api';
 import { pastLabel } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
-import { buildExport, importJson, signIn, signOut, syncNow, toast, useApp } from '../store';
+import { buildExport, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp } from '../store';
 
 interface Props {
   theme: Theme;
@@ -24,6 +24,7 @@ export function Settings({ theme, onTheme }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const mdRef = useRef<HTMLInputElement>(null);
   const now = Date.now();
 
   async function submit(event: React.FormEvent) {
@@ -63,6 +64,27 @@ export function Settings({ theme, onTheme }: Props) {
       toast(count > 0 ? `导入 ${count} 条` : '文件里没有笔记', count > 0 ? 'ok' : 'warn');
     } catch {
       toast('这个文件读不了，需要之前导出的 JSON', 'error');
+    }
+  }
+
+  async function doImportMarkdown(list: FileList) {
+    try {
+      const files = await Promise.all(
+        [...list].map(async (file) => ({ name: file.name, text: await file.text() })),
+      );
+      const result = await importMarkdownFiles(files);
+
+      if (result.added === 0 && result.skipped === 0) {
+        toast('这些文件里没有能导入的内容', 'warn');
+        return;
+      }
+
+      const parts: string[] = [];
+      if (result.added > 0) parts.push(`导入 ${result.added} 条`);
+      if (result.skipped > 0) parts.push(`跳过 ${result.skipped} 条重复的`);
+      toast(parts.join('，'), result.added > 0 ? 'ok' : 'warn');
+    } catch {
+      toast('读不了这个文件，确认是 UTF-8 的纯文本', 'error');
     }
   }
 
@@ -201,7 +223,7 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>N</kbd> 记一条
           </li>
           <li>
-            <kbd>/</kbd> 打开全部笔记并搜索
+            <kbd>/</kbd> 跳到搜索框
           </li>
         </ul>
       </div>
@@ -226,6 +248,28 @@ export function Settings({ theme, onTheme }: Props) {
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) void doImport(file);
+              event.target.value = '';
+            }}
+          />
+        </div>
+
+        <p className="panel-desc panel-desc-gap">
+          已有的笔记文件可以直接搬进来。文件里如果有 <code className="icode">## </code> 分节，
+          会按节拆成多条；没有就整个文件当一条。内容一样的会自动跳过，重复导入不会翻倍。
+        </p>
+        <div className="panel-actions">
+          <button type="button" className="btn btn-ghost" onClick={() => mdRef.current?.click()}>
+            导入 Markdown（可多选）
+          </button>
+          <input
+            ref={mdRef}
+            type="file"
+            accept=".md,.markdown,.txt,text/markdown,text/plain"
+            multiple
+            hidden
+            onChange={(event) => {
+              const list = event.target.files;
+              if (list && list.length > 0) void doImportMarkdown(list);
               event.target.value = '';
             }}
           />

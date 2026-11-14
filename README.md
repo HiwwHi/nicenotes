@@ -225,6 +225,7 @@ nicenotes/
 
 - Not signed in: everything stays in the browser's IndexedDB, and "Export JSON" takes it with you.
 - Signed in: notes sync to your own server. No third party in the path.
+- Existing `.md` files can be imported as-is: a file with `## ` sections is split per section, otherwise the whole file becomes one note. Identical content is skipped, so importing twice does not duplicate anything.
 - Search, related-note suggestions and scheduling all run in the browser. They make no requests.
 - No analytics, no tracking, no third-party fonts or CDNs.
 - Nine sample notes are seeded on first open. They are never synced; once an account you sign into already has content, they are removed.

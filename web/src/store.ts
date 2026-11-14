@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { ApiError, api, hasBackend } from './lib/api';
 import { dayKey } from './lib/date';
 import * as local from './lib/db';
+import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
 import { applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
 import type { Account, Grade, StoredNote } from './types';
 
@@ -559,4 +560,62 @@ export async function importJson(raw: string): Promise<number> {
   advance();
   scheduleSync();
   return merged.length;
+}
+
+export interface ImportResult {
+  added: number;
+  skipped: number;
+}
+
+/**
+ * 批量导入 Markdown。一个文件里如果有 `## ` 分节，会拆成多条。
+ * 内容指纹相同的直接跳过 —— 同一个文件导两次不该变成两份。
+ */
+export async function importMarkdownFiles(
+  files: { name: string; text: string }[],
+): Promise<ImportResult> {
+  const seen = new Set(visibleNotes(state.notes).map((note) => contentHash(note.body)));
+  const now = Date.now();
+  const incoming: StoredNote[] = [];
+  let skipped = 0;
+
+  for (const file of files) {
+    for (const parsed of parseMarkdownFile(file.name, file.text)) {
+      const body = toBody(parsed).slice(0, 20_000).trim();
+      if (!body) continue;
+
+      const hash = contentHash(body);
+      if (seen.has(hash)) {
+        skipped += 1;
+        continue;
+      }
+
+      seen.add(hash);
+      incoming.push({
+        id: crypto.randomUUID(),
+        body,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+        memory: freshMemory(now),
+        reviewCount: 0,
+        baseUpdatedAt: 0,
+      });
+    }
+  }
+
+  if (incoming.length > 0) {
+    // 时间按导入顺序递减，列表里第一条就是文件里的第一段
+    incoming.forEach((note, index) => {
+      const ts = now - index * 1000;
+      note.createdAt = ts;
+      note.updatedAt = ts;
+    });
+
+    set({ notes: [...state.notes, ...incoming] });
+    await local.putNotes(incoming);
+    scheduleSync();
+  }
+
+  return { added: incoming.length, skipped };
 }

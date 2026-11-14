@@ -1065,6 +1065,12 @@ mark.hit {
   color: var(--ink-2);
 }
 
+.panel-desc-gap {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
 .panel-note {
   margin: 12px 0 0;
   font-size: 12px;
