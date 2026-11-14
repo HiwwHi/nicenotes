@@ -1,3 +1,4 @@
+import { initialsOf, looksLikeInitials } from './pinyin';
 import type { StoredNote } from '../types';
 
 /**
@@ -66,6 +67,8 @@ interface Doc {
   words: string[];
   /** 单个汉字计数。二元组索引里没有单字，搜「网」也得能找到「以太网」 */
   chars: Map<string, number>;
+  /** 拼音首字母串，搜 ytw 找「以太网」用 */
+  initials: string;
   length: number;
 }
 
@@ -99,6 +102,7 @@ function toDoc(note: StoredNote): Doc {
     titleCounts,
     words,
     chars,
+    initials: initialsOf(note.body),
     length: Math.max(24, note.body.length),
   };
 }
@@ -124,6 +128,8 @@ function termFreq(doc: Doc, term: string): number {
 const TITLE_WEIGHT = 2.4;
 const RECENCY_WEIGHT = 0.14;
 const DAY = 86_400_000;
+/** 拼音缩写命中的基础分：低于精确词命中，只用来补召回 */
+const PINYIN_WEIGHT = 7;
 
 /**
  * 按关联度检索。查询里用空格分成几段时，各段的结果会合并排序 ——
@@ -150,6 +156,10 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
   const allTerms = uniq(groups.flat());
   const docs = alive.map(toDoc);
   const total = Math.max(1, docs.length);
+
+  // 纯字母查询同时当拼音缩写试一次：打 ytw 也要能找到「以太网」
+  const lowerText = text.toLowerCase();
+  const latin = looksLikeInitials(lowerText) ? lowerText : null;
 
   const df = new Map<string, number>();
   for (const term of allTerms) {
@@ -181,6 +191,11 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
         // 覆盖率：这一段查的词命中比例越高，得分越可信
         raw += groupScore * (0.55 + 0.45 * (groupHits / group.length));
       }
+    }
+
+    // 拼音首字母命中：权重给得比精确词低一些，长缩写更可信
+    if (latin && doc.initials.includes(latin)) {
+      raw += PINYIN_WEIGHT + Math.min(6, latin.length - 2) * 1.5;
     }
 
     if (raw <= 0) return null;
