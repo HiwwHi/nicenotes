@@ -9,9 +9,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -22,11 +22,15 @@ jobs:
 
       - name: 后端冒烟测试
         run: |
-          node server/dist/index.js &
+          node server/dist/index.js > /tmp/server.log 2>&1 &
           SERVER_PID=$!
           for i in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:8787/api/health > /dev/null 2>&1; then break; fi
             sleep 0.5
           done
-          curl -fsS http://127.0.0.1:8787/api/health
+          if ! curl -fsS http://127.0.0.1:8787/api/health; then
+            echo '--- server 日志 ---'
+            cat /tmp/server.log
+            exit 1
+          fi
           kill $SERVER_PID
