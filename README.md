@@ -53,6 +53,8 @@ Return codes, register addresses and command names stand out from the sentence. 
 
 Why not full Markdown: the `*` and `-` you type casually would turn into italics and lists, and the only thing in a note that genuinely needs layout is code.
 
+Code blocks are syntax-coloured for `sh` / `bash`, `c` / `h` and `dts` / `dtsi`. No highlighter library — a full one is a few hundred KB, while code notes really only need comments, strings, numbers and keywords to be distinguishable. The whole thing adds 3KB.
+
 ![Code block](docs/shot-code-block.png)
 
 ## Search does not require the exact words

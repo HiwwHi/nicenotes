@@ -194,12 +194,12 @@ const SEED: { title: string; rest: string; daysAgo: number }[] = [
   },
   {
     title: 'initcall_debug 只能启动前打开，别人的 log 事后用不上。',
-    rest: '所以拿到一份现成的 dmesg，只能靠时间戳差值人工找嫌疑：\n```\n[    0.823] probe of 1c28000.i2c returned 0 after 1204 usecs\n[    1.457] probe of fe2b0000.ethernet returned -517 after 3 usecs\n```\n这两行差了 0.6 秒，真正的嫌疑是第一行 —— 它自己花了 1.2ms。',
+    rest: '所以拿到一份现成的 dmesg，只能靠时间戳差值人工找嫌疑：\n```text\n[    0.823] probe of 1c28000.i2c returned 0 after 1204 usecs\n[    1.457] probe of fe2b0000.ethernet returned -517 after 3 usecs\n```\n这两行差了 0.6 秒，真正的嫌疑是第一行 —— 它自己花了 1.2ms。',
     daysAgo: 5,
   },
   {
     title: 'I2C 通信失败，先量上拉电阻，再看时序。',
-    rest: '`4.7k` 上拉在 `400k` 速率下边沿常常太慢。示波器看 SCL 上升沿，如果爬到 3.3V 用了几百纳秒，就是它。\n曾经因为这个换过一整批板子上的电阻。',
+    rest: '`4.7k` 上拉在 `400k` 速率下边沿常常太慢。示波器看 SCL 上升沿，如果爬到 3.3V 用了几百纳秒，就是它。\n```bash\n# 先确认设备在不在总线上\ni2cdetect -y 1\n# 再读一遍寄存器，看有没有响应\ni2cget -y 1 0x38 0x00\n```\n曾经因为这个换过一整批板子上的电阻。',
     daysAgo: 6,
   },
   {

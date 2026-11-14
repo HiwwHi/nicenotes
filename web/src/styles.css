@@ -172,6 +172,33 @@ mark.hit {
   pointer-events: none;
 }
 
+/* 语法着色的六种身份。颜色都用已有变量，深色模式自动跟着换 */
+.tok-comment {
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+.tok-string {
+  color: var(--good);
+}
+
+.tok-number {
+  color: var(--mid);
+}
+
+.tok-keyword {
+  color: var(--accent);
+}
+
+.tok-variable {
+  color: var(--accent);
+  opacity: 0.88;
+}
+
+.tok-meta {
+  color: var(--bad);
+}
+
 /* ---------------------------------------------------------------- 骨架 */
 
 .app {
