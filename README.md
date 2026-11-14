@@ -25,7 +25,12 @@ Open it and the first screen is always a single note, not a list:
 - Something is due → that is the one on screen, and everything after the second line is blurred so you have to recall it yourself.
 - Nothing is due → it **weighted-samples one note** from the whole library. The longer a note has gone untouched, the more likely it surfaces.
 
-Scroll down and you get everything, grouped by day, one line per day. When you need to find something, search is always waiting at the top.
+Scroll down and you get everything. The order is switchable:
+
+- **By time** — grouped by day, one block per day, like a Markdown file you keep appending to and read backwards
+- **Shuffled** — order broken up, tap again for a different draw, whatever turns up is what you look at
+
+When you need to find something, search is always waiting at the top.
 
 No directories, no tag trees, no "please create a notebook first." **You do not manage it. You just write.**
 
