@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <dict>
+    <key>URL</key>
+    <string>https://hiwwhi.github.io/nicenotes/</string>
+    <key>FullScreen</key>
+    <true/>
+    <key>IsRemovable</key>
+    <true/>
+    <key>Label</key>
+    <string>NiceNotes</string>
+    <key>Icon</key>
+    <data>iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAFA0lEQVR4nOzdX09bdRzH8S+FbcBaGAwYZR1MM+nAiGKYUTJNvFIy3bXJLhafgWYXXvgE9MKMZ2C48AnojC5ezCtxGWZzZnPUDCFoyyb/TPlTOpZ4JjfG+JktO6Xn27xf6QWBQ9I0b875nf5+/dFw8dyQAf8lZoBAHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oDUYM6lR8d6nhlKdCQtYqYnL2cz1/OLC+aW7zjOXhjv6X/BIil4YtnMjSsTH/ntw/FlZeSt85EtY0fw9NIvv2FuOT5z9KSHLfISh7vNLcdnjvxiziIvv+R4zOE4jqkvJ6J/Oc9mfjS36t8cOmI+FTfWioX1jtSJA81xi6TPP3kvGJOaW3UXzw2ZcxEcluaXF1zfxO5w/z6HPTp1O/7rjDLeIYVEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIA5L7uZVER3dP/3Civcv2SjALXxvzav/Ldxyvn/8gPTpm1TD1xadTlyaspjm+rDxaoVmlMgIjb78bnLSspjmOI/1KldfuBpczq2m1sJ6jWvZyoFMVjs8c2V9uWlVNf3/ZaprjOKa/+yp4WJVcmfi45m9Y3K8hDYalPf3P2x7KL9/3/jnHErkfc2QzN1hDWiG8QwqJOCARByTigMSbYOFLdCRbO1PNidZYfUOxWNhYXVpZmN1az5s3xBGmtmRfanAk3vbvjx8/Za/+MXdn/tbVrY1184M4QtP77EtHB0bUTzv7TrYnj2eufrN6b96cYMwRjmODpx5Txo76/Y0Dp884mssljhAc6kqlBk+VdGhd7Onh18wJ4gjB0YEXSz+4ubWj+8Rz5gFxPKmDLYdbOlNl/UpXb9o8qIUBaXAVT7SHcyHfxeLQRGfZW6AebO9q2N+4XSxYtPmOI5iSPXth3EJV7uahjfFWK19jvGVtOepxOL6sBCeM0MuwneDeHy/9niIW281rWBdz8Mp7XkNasf1fy7pOFQu7OQFsb21a5Hk+c1Ry/9fSN1NfW71vZXpYLGzm/7TI87xJbSX3f81mrpd45Gpubru4ZeVY+n3GPPC8Se2lSm1SW+760FyZS51zd38yD3zfrXz24Tvp0bEQP8CSX8z9/a8wylt3+NvP19qSvfH2krb7nb99LZinNQ9qYZPaKAhuaE+ePtMUP/T4w+79envmh2/NCcfbW0dKMOxYmr/bFG9pamlTxwRT9nM3J80PpuxD82Br487k123J4519/W1HjsX2Hdj5fmFtdSU7uzBzq7Dm4A7ln4gjZCu52eARfLG/sbmuft92cfPhg6L5RByVUixsmHPMykIiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHpL8AAAD//zHEmkIAAAAGSURBVAMA5qAVg98KHGQAAAAASUVORK5CYII=</data>
+  </dict>
+  <key>PayloadDisplayName</key>
+  <string>NiceNotes 主屏图标</string>
+  <key>PayloadDescription</key>
+  <string>把一个全屏打开的 NiceNotes 图标放到主屏幕。</string>
+  <key>PayloadIdentifier</key>
+  <string>io.github.hiwwhi.nicenotes.webclip</string>
+  <key>PayloadOrganization</key>
+  <string>NiceNotes</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>0AA67D5D-213A-4AF2-B4C2-E07AD2453889</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>

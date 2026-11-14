@@ -298,12 +298,17 @@ export function Settings({ theme, onTheme }: Props) {
 
       <div className="panel">
         <h2 className="panel-title">关于</h2>
-        <p className="panel-desc">
+        <p className="panel-note">
           目前手上有 {visible} 条笔记。数据格式是普通 JSON，随时能导出带走。
         </p>
         <p className="panel-note">
+          iPhone：
+          <a href="./nicenotes.mobileconfig">用描述文件加主屏</a>
+          ——装完主屏直接出现图标，全屏打开，不用手动「分享 → 添加到主屏幕」。
+        </p>
+        <p className="panel-note">
           NiceNotes v2 · MIT ·{' '}
-          <a href="https://github.com/" target="_blank" rel="noreferrer">
+          <a href="https://github.com/HiwwHi/nicenotes" target="_blank" rel="noreferrer">
             源码
           </a>
         </p>

@@ -180,6 +180,16 @@ npm start          # the backend also serves the built frontend, single port
 
 A purely static build, published by `pages.yml` on every push to `main`. It **has no backend** — the sync UI hides itself and everything else works, which is enough to show the interface and interactions are real. For sync, run `docker compose up` yourself.
 
+### Put it on your phone
+
+It is not a native app, it is a PWA. The trade-off: one codebase for desktop and mobile, no store review, changes ship the moment you push.
+
+- **iPhone**: in Safari, "Share → Add to Home Screen". Or install the `nicenotes.mobileconfig` profile from the repo root and the icon appears on its own. (It is unsigned, so iOS shows "Not Verified" — tap continue.)
+- **Android**: Chrome offers "Add to Home screen" by itself, or use the menu.
+- **Desktop**: Chrome / Edge shows an install icon in the address bar. After that it runs as a standalone window with its own icon and no address bar.
+
+Once installed it opens offline too — the page and its JS/CSS are cached locally.
+
 ## Keyboard shortcuts
 
 | Key | Action |
