@@ -2,12 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
+import { shuffle } from '../lib/shuffle';
 import { archiveNote, toast } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
 import { PeekCard } from './PeekCard';
 import { ReviewCard } from './ReviewCard';
+
+/** 浏览顺序：按时间，还是打散 */
+type Order = 'time' | 'random';
+const ORDER_KEY = 'nicenotes.order';
 
 interface Props {
   notes: StoredNote[];
@@ -41,6 +46,32 @@ export function Stream({
   const [openId, setOpenId] = useState<string | null>(null);
   // 固定在这一刻：流的分组和「多久以前」不需要秒级刷新
   const [now] = useState(() => Date.now());
+
+  /**
+   * 浏览顺序。
+   *   time   —— 按写作时间，像一份不断往下追加的 Markdown 文件
+   *   random —— 打散了看，每次点一下换一批，适合翻着复习
+   * 选择记在本地，下次打开还是你上次选的那个。
+   */
+  const [order, setOrder] = useState<Order>(() => {
+    try {
+      return localStorage.getItem(ORDER_KEY) === 'random' ? 'random' : 'time';
+    } catch {
+      return 'time';
+    }
+  });
+  const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1_000_000_000));
+
+  const changeOrder = useCallback((next: Order) => {
+    setOrder(next);
+    // 每次点「随机」都换一个 seed，等于重新洗一遍牌
+    if (next === 'random') setSeed(Math.floor(Math.random() * 1_000_000_000));
+    try {
+      localStorage.setItem(ORDER_KEY, next);
+    } catch {
+      /* 无痕模式写不进去，忽略 */
+    }
+  }, []);
 
   const alive = useMemo(() => notes.filter((note) => !note.deletedAt), [notes]);
   const searching = query.trim().length > 0;
@@ -81,12 +112,16 @@ export function Stream({
   /** 第一屏那张已经在最显眼的位置了，流里不再出现第二次 */
   const heroId = review?.note.id ?? peek?.id;
 
-  const streamed = useMemo(
-    () => alive.filter((note) => note.id !== heroId).sort((a, b) => b.createdAt - a.createdAt),
-    [alive, heroId],
-  );
+  const streamed = useMemo(() => {
+    const rest = alive.filter((note) => note.id !== heroId);
+    if (order === 'random') return shuffle(rest, seed);
+    return rest.sort((a, b) => b.createdAt - a.createdAt);
+  }, [alive, heroId, order, seed]);
 
   const groups = useMemo(() => {
+    // 随机模式不按天分组：打散的意思就是不按时间走
+    if (order === 'random') return [];
+
     const buckets = new Map<string, { label: string; notes: StoredNote[] }>();
     for (const note of streamed) {
       const key = dayKey(note.createdAt);
@@ -98,7 +133,7 @@ export function Stream({
       }
     }
     return [...buckets.values()];
-  }, [streamed, now]);
+  }, [streamed, order, now]);
 
   const relatedHits = useMemo(() => {
     if (!openId) return [];
@@ -146,6 +181,21 @@ export function Stream({
   function toggle(id: string) {
     setOpenId((current) => (current === id ? null : id));
   }
+
+  const renderNote = (note: StoredNote) => (
+    <NoteItem
+      key={note.id}
+      note={note}
+      marks={[]}
+      expanded={openId === note.id}
+      onToggle={() => toggle(note.id)}
+      onEdit={() => onEdit(note)}
+      onDelete={() => onDelete(note.id)}
+      onArchive={() => void archiveNote(note.id)}
+      related={openId === note.id ? relatedHits : []}
+      onJump={jump}
+    />
+  );
 
   if (searching && result) {
     const count = result.hits.length;
@@ -226,38 +276,47 @@ export function Stream({
         </div>
       )}
 
-      {groups.length > 0 && (
+      {streamed.length > 0 && (
         <>
           <div className="stream-bar stream-bar-quiet">
-            <span className="stream-title">全部笔记</span>
-            <span className="stream-hint">
-              {alive.length} 条 · N 记一条 · / 搜索
+            <span className="stream-title">
+              全部笔记
+              <span className="dot-sep" />
+              {alive.length} 条
             </span>
+
+            <div className="order-switch" role="group" aria-label="浏览顺序">
+              <button
+                type="button"
+                className={order === 'time' ? 'is-active' : ''}
+                onClick={() => changeOrder('time')}
+                title="按写作时间，像一份不断往下追加的文件"
+              >
+                按时间
+              </button>
+              <button
+                type="button"
+                className={order === 'random' ? 'is-active' : ''}
+                onClick={() => changeOrder('random')}
+                title="打散了看，再点一下换一批"
+              >
+                随机
+              </button>
+            </div>
           </div>
 
-          <ul className="timeline">
-            {groups.map((group) => (
-              <li key={group.label} className="day">
-                <h2 className="day-label">{group.label}</h2>
-                <ul>
-                  {group.notes.map((note) => (
-                    <NoteItem
-                      key={note.id}
-                      note={note}
-                      marks={[]}
-                      expanded={openId === note.id}
-                      onToggle={() => toggle(note.id)}
-                      onEdit={() => onEdit(note)}
-                      onDelete={() => onDelete(note.id)}
-                      onArchive={() => void archiveNote(note.id)}
-                      related={openId === note.id ? relatedHits : []}
-                      onJump={jump}
-                    />
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          {order === 'random' ? (
+            <ul className="timeline is-flat">{streamed.map(renderNote)}</ul>
+          ) : (
+            <ul className="timeline">
+              {groups.map((group) => (
+                <li key={group.label} className="day">
+                  <h2 className="day-label">{group.label}</h2>
+                  <ul>{group.notes.map(renderNote)}</ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </div>
