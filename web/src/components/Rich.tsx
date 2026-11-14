@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { parseRich } from '../lib/rich';
 import { highlight } from '../lib/search';
 import { highlightCode } from '../lib/syntax';
@@ -22,10 +22,75 @@ export function Marked({ text, marks }: { text: string; marks: string[] }) {
   );
 }
 
-/** 带代码的正文：`行内` 和 ``` 围栏块 */
+/**
+ * 写剪贴板。
+ *
+ * 正常情况下 navigator.clipboard 就够了，但它在页面没有焦点、或者浏览器
+ * 没给权限时会直接抛错。那种情况下退回 execCommand —— 老 API，却能兜住。
+ */
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-9999px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(area);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * 代码块。
+ *
+ * 带一个复制按钮：从笔记里把命令捞到终端，不该还要手动框选。
+ * 语法着色和搜索高亮要能同时出现 —— 搜到一段代码，既想知道哪行命中，
+ * 也想看清哪是注释。所以先切 token，再把每个 token 内部做高亮。
+ */
+function CodeBlock({ text, lang, marks }: { text: string; lang: string; marks: string[] }) {
+  const [copied, setCopied] = useState(false);
+  const tokens = highlightCode(text, lang);
+
+  async function copy() {
+    const ok = await writeClipboard(text);
+    if (!ok) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  return (
+    <div className="code-wrap">
+      {/* prettier-ignore */}
+      <pre className="code" data-lang={lang || undefined}><code>{tokens.map((token, i) => {
+        const inner = <Marked text={token.text} marks={marks} />;
+        return token.kind === 'plain' ? (
+          <Fragment key={i}>{inner}</Fragment>
+        ) : (
+          <span key={i} className={`tok-${token.kind}`}>{inner}</span>
+        );
+      })}</code></pre>
+      <button type="button" className="code-copy" onClick={() => void copy()}>
+        {copied ? '已复制' : '复制'}
+      </button>
+    </div>
+  );
+}
+
 /** 点内链时通知外面去跳转。用事件而不是一层层传 props，渲染组件不该关心导航 */
 const OPEN_EVENT = 'nicenotes:open-note';
 
+/** 带代码的正文：`行内`、``` 围栏块、[[笔记链接]] */
 export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
   const segments = parseRich(text);
 
@@ -57,22 +122,7 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
         }
 
         if (segment.kind === 'block') {
-          // 语法着色和搜索高亮要能同时出现：搜到一段代码，既想知道哪行命中，
-          // 也想看清哪是注释。所以先切 token，再把每个 token 内部做高亮。
-          const tokens = highlightCode(segment.text, segment.lang);
-
-          // 整个 pre/code 必须写成一行：JSX 会在换行处插入空白，
-          // 而 <pre> 会把那个空白当内容显示出来。
-          return (
-            <pre key={index} className="code" data-lang={segment.lang || undefined}><code>{tokens.map((token, i) => {
-              const inner = <Marked text={token.text} marks={marks} />;
-              return token.kind === 'plain' ? (
-                <Fragment key={i}>{inner}</Fragment>
-              ) : (
-                <span key={i} className={`tok-${token.kind}`}>{inner}</span>
-              );
-            })}</code></pre>
-          );
+          return <CodeBlock key={index} text={segment.text} lang={segment.lang} marks={marks} />;
         }
 
         return <Marked key={index} text={segment.text} marks={marks} />;

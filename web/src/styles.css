@@ -137,9 +137,13 @@ mark.hit {
   -webkit-box-decoration-break: clone;
 }
 
-.code {
+.code-wrap {
   position: relative;
   margin: 15px 0;
+}
+
+.code {
+  margin: 0;
   padding: 14px 16px;
   border-radius: var(--r-md);
   background: var(--bg-deep);
@@ -178,17 +182,60 @@ mark.hit {
   border-bottom-color: var(--accent);
 }
 
+/* 有语言标签时给它让出一条 */
+.code[data-lang] {
+  padding-top: 32px;
+}
+
 .code[data-lang]::before {
   content: attr(data-lang);
   position: absolute;
-  top: 7px;
-  right: 12px;
+  top: 9px;
+  left: 16px;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
   color: var(--ink-3);
-  opacity: 0.55;
+  opacity: 0.6;
   pointer-events: none;
+}
+
+.code-copy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.code-wrap:hover .code-copy,
+.code-copy:focus-visible {
+  opacity: 1;
+}
+
+.code-copy:hover {
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+
+/* 触屏没有 hover，按钮得一直看得见 */
+@media (hover: none) {
+  .code-copy {
+    opacity: 0.75;
+  }
+}
+
+/* 模糊层里的按钮不该能点 */
+.card-veil .code-copy {
+  display: none;
 }
 
 /* 语法着色的六种身份。颜色都用已有变量，深色模式自动跟着换 */
