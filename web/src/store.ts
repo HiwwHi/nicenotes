@@ -298,7 +298,8 @@ async function seedIfEmpty(): Promise<void> {
   const notes: StoredNote[] = SEED.map((item, index) => {
     const created = now - item.daysAgo * DAY - index * 37 * 60_000;
     return {
-      id: newId(),
+      // 用固定 id：两个标签页同时首次打开会各 seed 一次，随机 id 会让示例翻倍
+      id: `demo-seed-${String(index + 1).padStart(4, '0')}`,
       body: `${item.title}\n${item.rest}`,
       createdAt: created,
       updatedAt: created,
