@@ -193,6 +193,15 @@ export function NoteItem({
               <TrashIcon />
               删除
             </button>
+            {/* 长笔记滚到底之后，不用再滚回顶部去点标题 */}
+            {rest.length > 900 && (
+              <>
+                <span className="dot-sep" />
+                <button type="button" className="link" onClick={onToggle}>
+                  收起
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
