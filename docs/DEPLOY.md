@@ -155,4 +155,11 @@ docker run --rm -v nicenotes-data:/data alpine \
 
 **只想自己用，不开放注册**
 
-现在没做这个开关。最简单的办法是注册完自己的账号后，把注册接口关掉——在 `server/src/index.ts` 里注释掉 `app.post('/api/auth/register')` 那一段再重新构建。
+启动时加一个环境变量就行，注册接口会返回 403，前端也不会显示注册入口：
+
+```yaml
+    environment:
+      ALLOW_REGISTER: '0'
+```
+
+注意顺序：**先把自己的账号注册好，再关掉**，否则连自己都注册不了。

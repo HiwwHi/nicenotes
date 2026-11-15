@@ -24,11 +24,19 @@ type Variables = { userId: string };
 
 const app = new Hono<{ Variables: Variables }>();
 
+/**
+ * 自己用的时候通常不想让陌生人注册。设 ALLOW_REGISTER=0 就把口子关上，
+ * 前端会通过 /api/health 知道这件事，注册入口直接不显示。
+ */
+const allowRegister = process.env.ALLOW_REGISTER !== '0';
+
 app.use('/api/*', cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
 
-app.get('/api/health', (c) => c.json({ ok: true, now: Date.now() }));
+app.get('/api/health', (c) => c.json({ ok: true, now: Date.now(), allowRegister }));
 
 app.post('/api/auth/register', async (c) => {
+  if (!allowRegister) return c.json({ error: '这台服务器没开放注册' }, 403);
+
   const body = await c.req.json().catch(() => null);
   const email = normalizeEmail(String(body?.email ?? ''));
   const password = String(body?.password ?? '');

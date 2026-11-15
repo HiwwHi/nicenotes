@@ -17,7 +17,7 @@ const THEMES: { value: Theme; label: string }[] = [
 ];
 
 export function Settings({ theme, onTheme }: Props) {
-  const { account, syncing, lastSyncAt, syncError, notes, log } = useApp();
+  const { account, allowRegister, syncing, lastSyncAt, syncError, notes, log } = useApp();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -135,22 +135,24 @@ export function Settings({ theme, onTheme }: Props) {
           </div>
         ) : (
           <form className="auth" onSubmit={submit}>
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={`auth-tab ${mode === 'login' ? 'is-active' : ''}`}
-                onClick={() => setMode('login')}
-              >
-                登录
-              </button>
-              <button
-                type="button"
-                className={`auth-tab ${mode === 'register' ? 'is-active' : ''}`}
-                onClick={() => setMode('register')}
-              >
-                注册
-              </button>
-            </div>
+            {allowRegister && (
+              <div className="auth-tabs">
+                <button
+                  type="button"
+                  className={`auth-tab ${mode === 'login' ? 'is-active' : ''}`}
+                  onClick={() => setMode('login')}
+                >
+                  登录
+                </button>
+                <button
+                  type="button"
+                  className={`auth-tab ${mode === 'register' ? 'is-active' : ''}`}
+                  onClick={() => setMode('register')}
+                >
+                  注册
+                </button>
+              </div>
+            )}
             <input
               className="field"
               type="email"

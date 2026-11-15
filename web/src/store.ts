@@ -26,6 +26,8 @@ export interface AppState {
   syncing: boolean;
   lastSyncAt: number | null;
   syncError: string | null;
+  /** 这台服务器开不开注册。关掉之后界面里不该出现注册入口 */
+  allowRegister: boolean;
   currentId: string | null;
   revealed: boolean;
   sessionDone: string[];
@@ -43,6 +45,7 @@ const emptyState: AppState = {
   syncing: false,
   lastSyncAt: null,
   syncError: null,
+  allowRegister: true,
   currentId: null,
   revealed: false,
   sessionDone: [],
@@ -280,6 +283,14 @@ export async function init(): Promise<void> {
     };
 
     if (notes.length === 0) await seedIfEmpty();
+
+    // 顺带问一句这台服务器开不开注册，界面据此决定要不要显示注册入口
+    if (hasBackend) {
+      void api
+        .health()
+        .then((result) => set({ allowRegister: result.allowRegister !== false }))
+        .catch(() => undefined);
+    }
 
     const token = getToken();
     if (token && hasBackend) {
