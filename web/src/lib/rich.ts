@@ -11,12 +11,29 @@ export type Segment =
   | { kind: 'inline'; text: string }
   | { kind: 'block'; text: string; lang: string }
   /** [[另一条笔记的标题]] */
-  | { kind: 'wiki'; text: string };
+  | { kind: 'wiki'; text: string }
+  /** | 表头 | 表头 | 加一行 |---|---| */
+  | { kind: 'table'; header: string[]; rows: string[][] };
 
 const FENCE_OPEN = /^```([\w+#.-]*)\s*$/;
 const FENCE_CLOSE = /^```\s*$/;
 const INLINE = /`([^`\n]+)`|\[\[([^[\]\n]+)\]\]/g;
 const WIKI = /\[\[([^[\]\n]+)\]\]/g;
+
+/** 表格分隔行：|---|---| 或者带对齐的 |:--|--:| */
+function isTableDivider(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.includes('-') && /^[|\s:-]+$/.test(trimmed) && trimmed.includes('|');
+}
+
+function splitRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim());
+}
 
 function splitInline(text: string): Segment[] {
   const parts: Segment[] = [];
@@ -57,7 +74,9 @@ export function parseRich(input: string): Segment[] {
     buffer = [];
   };
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] ?? '';
+
     if (!fenced) {
       const open = line.match(FENCE_OPEN);
       if (open) {
@@ -67,6 +86,25 @@ export function parseRich(input: string): Segment[] {
         body = [];
         continue;
       }
+
+      // 表格：这一行以 | 开头，下一行是 |---|---| 分隔行
+      const next = lines[i + 1] ?? '';
+      if (line.trim().startsWith('|') && isTableDivider(next)) {
+        flush();
+        const header = splitRow(line);
+        const rows: string[][] = [];
+        let j = i + 2;
+
+        while (j < lines.length && (lines[j] ?? '').trim().startsWith('|')) {
+          rows.push(splitRow(lines[j] ?? ''));
+          j += 1;
+        }
+
+        out.push({ kind: 'table', header, rows });
+        i = j - 1;
+        continue;
+      }
+
       buffer.push(line);
       continue;
     }

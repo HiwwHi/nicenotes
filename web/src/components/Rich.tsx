@@ -93,6 +93,35 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
           );
         }
 
+        if (segment.kind === 'table') {
+          return (
+            <div className="table-wrap" key={index}>
+              <table>
+                <thead>
+                  <tr>
+                    {segment.header.map((cell, i) => (
+                      <th key={i}>
+                        <Marked text={cell} marks={marks} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {segment.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex}>
+                          <Marked text={cell} marks={marks} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
         if (segment.kind === 'block') {
           return <CodeBlock key={index} text={segment.text} lang={segment.lang} marks={marks} />;
         }

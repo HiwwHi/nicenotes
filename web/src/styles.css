@@ -2103,3 +2103,33 @@ mark.hit {
     border-color: #d8d8d8;
   }
 }
+
+/* 表格：对比参数、寄存器位域这类内容，比一堆文字清楚 */
+.table-wrap {
+  margin: 15px 0;
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 100%;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table-wrap th {
+  background: var(--bg-deep);
+  color: var(--ink-2);
+  font-weight: 550;
+}
+
+.table-wrap tr:hover td {
+  background: var(--bg-deep);
+}
