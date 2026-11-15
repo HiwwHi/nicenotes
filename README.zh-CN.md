@@ -160,6 +160,8 @@ docker compose up -d
 
 打开 <http://127.0.0.1:8787>。数据库落在 `nicenotes-data` 卷里，删容器不丢数据。
 
+要放到公网、配 HTTPS、做备份，看 **[docs/DEPLOY.md](docs/DEPLOY.md)**——从一台空机器到手机上能用，大约十分钟。
+
 ### 本地开发
 
 需要 Node.js 22.5 以上（`node:sqlite` 从这版开始可用）。

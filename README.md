@@ -160,6 +160,8 @@ docker compose up -d
 
 Open <http://127.0.0.1:8787>. The database lives in the `nicenotes-data` volume, so removing the container does not lose it.
 
+To put it on the public internet with HTTPS, backups and upgrades, see **[docs/DEPLOY.md](docs/DEPLOY.md)** — from a blank VPS to a working phone icon, about ten minutes.
+
 ### Local development
 
 Requires Node.js 22.5 or newer (`node:sqlite` is available from that version).
