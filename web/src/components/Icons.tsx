@@ -8,6 +8,15 @@ const stroke = {
 
 type Props = { size?: number; className?: string };
 
+export function CopyIcon({ size = 13, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} aria-hidden="true">
+      <rect x="7" y="7" width="9" height="9" rx="2" {...stroke} />
+      <path d="M13 7V5.5A1.5 1.5 0 0 0 11.5 4H5.5A1.5 1.5 0 0 0 4 5.5v6A1.5 1.5 0 0 0 5.5 13H7" {...stroke} />
+    </svg>
+  );
+}
+
 export function CheckIcon({ size = 12, className }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} className={className} aria-hidden="true">

@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { writeClipboard } from '../lib/clipboard';
 import { parseRich } from '../lib/rich';
 import { highlight } from '../lib/search';
 import { highlightCode } from '../lib/syntax';
@@ -20,35 +21,6 @@ export function Marked({ text, marks }: { text: string; marks: string[] }) {
       )}
     </>
   );
-}
-
-/**
- * 写剪贴板。
- *
- * 正常情况下 navigator.clipboard 就够了，但它在页面没有焦点、或者浏览器
- * 没给权限时会直接抛错。那种情况下退回 execCommand —— 老 API，却能兜住。
- */
-async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    try {
-      const area = document.createElement('textarea');
-      area.value = text;
-      area.setAttribute('readonly', '');
-      area.style.position = 'fixed';
-      area.style.top = '-9999px';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
-      area.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(area);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
 }
 
 /**

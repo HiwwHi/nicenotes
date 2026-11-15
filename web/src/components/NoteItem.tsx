@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
+import { writeClipboard } from '../lib/clipboard';
 import { dueLabel, pastLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
 import { snippet, type SearchHit } from '../lib/search';
+import { toast } from '../store';
 import type { StoredNote } from '../types';
-import { ArrowLeftIcon, CheckIcon, LinkIcon, PencilIcon, TrashIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, CopyIcon, LinkIcon, PencilIcon, TrashIcon } from './Icons';
 import { Marked, Rich } from './Rich';
 
 interface Props {
@@ -63,6 +65,12 @@ export function NoteItem({
     });
     return () => cancelAnimationFrame(frame);
   }, [expanded, note.id]);
+
+  /** 整条复制出去：发给同事、贴进别的工具，保持原来的记号 */
+  async function copyNote() {
+    const ok = await writeClipboard(note.body);
+    toast(ok ? '整条复制好了' : '复制不了，浏览器没给剪贴板权限', ok ? 'ok' : 'warn');
+  }
 
   return (
     <li id={`note-${note.id}`} className={`item ${expanded && !selectMode ? 'is-open' : ''} ${featured ? 'is-featured' : ''} ${selected ? 'is-selected' : ''}`}>
@@ -166,6 +174,11 @@ export function NoteItem({
             <button type="button" className="link" onClick={onEdit}>
               <PencilIcon />
               改一下
+            </button>
+            <span className="dot-sep" />
+            <button type="button" className="link" onClick={() => void copyNote()}>
+              <CopyIcon />
+              复制
             </button>
             <span className="dot-sep" />
             <button type="button" className="link" onClick={onArchive}>
