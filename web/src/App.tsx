@@ -326,6 +326,9 @@ export default function App() {
               if (ok) {
                 setQuery('');
                 setView('stream');
+                // 新笔记排在最上面。滚回去让它自己露个脸，
+                // 不然你刚写完却看不到，会怀疑到底存没存下
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }
               return ok;
             }
