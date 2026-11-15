@@ -542,6 +542,27 @@ function scheduleSync(): void {
   }, 2500);
 }
 
+/**
+ * 同步失败后的自动重试。
+ *
+ * 断网、服务端重启、地铁里进隧道，这些都会让一次同步失败。以前失败就
+ * 停在那儿，除非用户又写了一条笔记，否则不会再试。
+ */
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let retryDelay = 15_000;
+
+function scheduleRetry(): void {
+  if (!getToken() || !hasBackend) return;
+  if (retryTimer) return;
+
+  const delay = retryDelay;
+  retryDelay = Math.min(retryDelay * 2, 5 * 60 * 1000);
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    void syncNow(true);
+  }, delay);
+}
+
 export async function syncNow(silent = false): Promise<number | null> {
   const token = getToken();
   if (!token || !hasBackend || state.syncing) return null;
@@ -573,6 +594,13 @@ export async function syncNow(silent = false): Promise<number | null> {
     const now = Date.now();
     set({ syncing: false, lastSyncAt: now, currentId: state.currentId, syncError: null });
 
+    // 这次通了，把退避重置回起点
+    retryDelay = 15_000;
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+
     // 当前卡片可能被远端覆盖了，重算一下
     if (state.currentId && !byId.has(state.currentId)) advance();
 
@@ -595,7 +623,11 @@ export async function syncNow(silent = false): Promise<number | null> {
     if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
       setToken(null);
       set({ account: null });
+      return null;
     }
+
+    // 网络类错误就等着再试，别让一次断网把后面的笔记都堵在本机
+    scheduleRetry();
     return null;
   }
 }
