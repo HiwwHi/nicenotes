@@ -527,7 +527,12 @@ export async function syncNow(silent = false): Promise<number | null> {
     if (state.currentId && !byId.has(state.currentId)) advance();
 
     const lost = result.conflicts.filter((item) => item.winner === 'remote').length;
-    if (lost > 0) {
+    const dropped = result.rejected?.length ?? 0;
+
+    if (dropped > 0) {
+      // 被拒的笔记留在本机，只是上不去。得说出来，不然用户以为同步好了
+      toast(`${dropped} 条笔记没同步上去（服务端不认这个格式），本机数据还在`, 'warn');
+    } else if (lost > 0) {
       toast(`${lost} 条笔记在另一台设备上改过，旧内容已存进历史`, 'warn');
     } else if (!silent) {
       toast(result.notes.length > 0 ? `已同步，拿回 ${result.notes.length} 条` : '已是最新');

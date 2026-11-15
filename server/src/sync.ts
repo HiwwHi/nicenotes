@@ -66,6 +66,8 @@ export interface SyncOutcome {
   since: number;
   notes: Note[];
   conflicts: SyncConflict[];
+  /** 校验没过、没存下来的笔记。以前是静默丢掉，客户端以为成功了 */
+  rejected: { id: string; reason: string }[];
 }
 
 /**
@@ -80,13 +82,23 @@ export function runSync(userId: string, since: number, incoming: SyncNote[]): Sy
   const batch = Array.isArray(incoming) ? incoming.slice(0, MAX_NOTES_PER_PUSH) : [];
   const conflicts: SyncConflict[] = [];
   const explicitWinners: Note[] = [];
+  const rejected: { id: string; reason: string }[] = [];
 
   const cursor = transaction(() => {
     let seq = getSeq(userId);
 
     for (const raw of batch) {
+      const rawId = typeof raw?.id === 'string' ? raw.id : '';
+      if (!ID_PATTERN.test(rawId)) {
+        rejected.push({ id: rawId.slice(0, 64) || '(空)', reason: 'id 不合法' });
+        continue;
+      }
+
       const candidate = normalizeNote(raw, now);
-      if (!candidate) continue;
+      if (!candidate) {
+        rejected.push({ id: rawId, reason: '格式不对' });
+        continue;
+      }
 
       const existing = getNoteRow(userId, candidate.id);
 
@@ -133,5 +145,5 @@ export function runSync(userId: string, since: number, incoming: SyncNote[]): Sy
     merged.set(note.id, note);
   }
 
-  return { since: cursor, notes: [...merged.values()], conflicts };
+  return { since: cursor, notes: [...merged.values()], conflicts, rejected };
 }

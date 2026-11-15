@@ -52,6 +52,8 @@ export interface SyncResult {
   since: number;
   notes: Note[];
   conflicts: SyncConflict[];
+  /** 服务端校验没过、没存下的笔记 */
+  rejected?: { id: string; reason: string }[];
 }
 
 export interface HistoryVersion {
