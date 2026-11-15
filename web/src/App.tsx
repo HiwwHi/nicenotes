@@ -19,7 +19,7 @@ import {
   syncNow,
   useApp,
 } from './store';
-import { clearSearches, readSearches, rememberSearch } from './lib/history';
+import { clearSearches, readSearches, rememberSearch, writeSearches } from './lib/history';
 import type { Grade } from './types';
 
 type View = 'stream' | 'settings';
@@ -65,6 +65,14 @@ export default function App() {
     setQuery(text);
     setHistoryOpen(false);
     searchRef.current?.focus();
+  }
+
+  function forgetSearch(text: string) {
+    setSearches((current) => {
+      const next = current.filter((item) => item !== text);
+      writeSearches(next);
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -246,8 +254,16 @@ export default function App() {
                 <ul>
                   {searches.map((item) => (
                     <li key={item}>
-                      <button type="button" onClick={() => pickSearch(item)}>
+                      <button type="button" className="history-pick" onClick={() => pickSearch(item)}>
                         {item}
+                      </button>
+                      <button
+                        type="button"
+                        className="history-remove"
+                        aria-label={`从历史里删掉「${item}」`}
+                        onClick={() => forgetSearch(item)}
+                      >
+                        <CloseIcon size={12} />
                       </button>
                     </li>
                   ))}

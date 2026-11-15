@@ -46,3 +46,12 @@ export function clearSearches(): void {
     /* ignore */
   }
 }
+
+/** 直接覆盖整个列表（删单条时用） */
+export function writeSearches(list: string[]): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list.slice(0, LIMIT)));
+  } catch {
+    /* ignore */
+  }
+}
