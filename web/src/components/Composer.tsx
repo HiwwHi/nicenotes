@@ -4,6 +4,7 @@ import { timeLabel } from '../lib/date';
 import { authToken } from '../store';
 import type { HistoryVersion } from '../types';
 import { CloseIcon } from './Icons';
+import { Rich } from './Rich';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -37,6 +38,8 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     }
   });
   const [busy, setBusy] = useState(false);
+  /** 写代码块的时候，得能先看一眼渲染成什么样再存 */
+  const [tab, setTab] = useState<'write' | 'preview'>('write');
   const [versions, setVersions] = useState<HistoryVersion[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,35 +133,60 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             {mode === 'create' ? '记一条' : '编辑'}
             {restored && <span className="draft-badge">接着上次没写完的</span>}
           </h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭">
-            <CloseIcon />
-          </button>
+
+          <div className="sheet-tools">
+            <div className="order-switch" role="group" aria-label="写或预览">
+              <button
+                type="button"
+                className={tab === 'write' ? 'is-active' : ''}
+                onClick={() => setTab('write')}
+              >
+                写
+              </button>
+              <button
+                type="button"
+                className={tab === 'preview' ? 'is-active' : ''}
+                onClick={() => setTab('preview')}
+              >
+                预览
+              </button>
+            </div>
+            <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭">
+              <CloseIcon />
+            </button>
+          </div>
         </header>
 
-        <textarea
-          ref={areaRef}
-          className="sheet-area"
-          value={text}
-          spellCheck={false}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              void submit();
-              return;
-            }
+        {tab === 'write' ? (
+          <textarea
+            ref={areaRef}
+            className="sheet-area"
+            value={text}
+            spellCheck={false}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault();
+                void submit();
+                return;
+              }
 
-            // 写代码时 Tab 该缩进，而不是把焦点跳到下一个控件上
-            if (event.key === 'Tab') {
-              event.preventDefault();
-              const area = event.currentTarget;
-              area.setRangeText('  ', area.selectionStart, area.selectionEnd, 'end');
-              setText(area.value);
-            }
-          }}
-          placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n贴命令或 log 用三个反引号包起来；想连到另一条笔记，写 [[那条的标题]]。'}
-          rows={8}
-        />
+              // 写代码时 Tab 该缩进，而不是把焦点跳到下一个控件上
+              if (event.key === 'Tab') {
+                event.preventDefault();
+                const area = event.currentTarget;
+                area.setRangeText('  ', area.selectionStart, area.selectionEnd, 'end');
+                setText(area.value);
+              }
+            }}
+            placeholder={'第一行写这一条最要紧的那句话，下面再补充。\n贴命令或 log 用三个反引号包起来；想连到另一条笔记，写 [[那条的标题]]。'}
+            rows={8}
+          />
+        ) : (
+          <div className="sheet-preview">
+            {text.trim() ? <Rich text={text} /> : <p className="sheet-empty">还没有内容</p>}
+          </div>
+        )}
 
         <footer className="sheet-foot">
           <div className="sheet-tips">
