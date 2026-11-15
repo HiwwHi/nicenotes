@@ -274,6 +274,12 @@ export function Settings({ theme, onTheme }: Props) {
           <li>
             <kbd>/</kbd> 跳到搜索框
           </li>
+          <li>
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 在编辑框里保存
+          </li>
+          <li>
+            <kbd>Esc</kbd> 关掉编辑框 / 清空搜索 / 退出设置
+          </li>
         </ul>
       </div>
 
