@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
 import { pastLabel } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
@@ -23,6 +23,19 @@ export function Settings({ theme, onTheme }: Props) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<string | null>(null);
+
+  // 顺手报一下本地占了多少，几百条笔记也就几百 KB，但知道个量级安心
+  useEffect(() => {
+    navigator.storage
+      ?.estimate?.()
+      .then((estimate) => {
+        const bytes = estimate.usage ?? 0;
+        if (bytes <= 0) return;
+        setUsage(bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`);
+      })
+      .catch(() => undefined);
+  }, []);
   const fileRef = useRef<HTMLInputElement>(null);
   const mdRef = useRef<HTMLInputElement>(null);
   const now = Date.now();
@@ -252,6 +265,7 @@ export function Settings({ theme, onTheme }: Props) {
         <p className="panel-desc">
           导出是一个普通 JSON，任何编辑器都能打开。换设备、换浏览器、哪天不想用了，都能把东西带走。
         </p>
+        {usage && <p className="panel-note">这台设备上用了 {usage}（浏览器一般给几百 MB）。</p>}
         <div className="panel-actions">
           <button type="button" className="btn btn-ghost" onClick={doExport}>
             导出全部
