@@ -93,6 +93,24 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
           );
         }
 
+        if (segment.kind === 'list') {
+          const items = segment.items.map((item, i) => (
+            <li key={i}>
+              <Marked text={item} marks={marks} />
+            </li>
+          ));
+
+          return segment.ordered ? (
+            <ol className="md-list" key={index}>
+              {items}
+            </ol>
+          ) : (
+            <ul className="md-list" key={index}>
+              {items}
+            </ul>
+          );
+        }
+
         if (segment.kind === 'table') {
           return (
             <div className="table-wrap" key={index}>

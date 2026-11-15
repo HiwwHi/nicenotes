@@ -13,7 +13,9 @@ export type Segment =
   /** [[另一条笔记的标题]] */
   | { kind: 'wiki'; text: string }
   /** | 表头 | 表头 | 加一行 |---|---| */
-  | { kind: 'table'; header: string[]; rows: string[][] };
+  | { kind: 'table'; header: string[]; rows: string[][] }
+  /** - 一条 或者 1. 一条 */
+  | { kind: 'list'; ordered: boolean; items: string[] };
 
 const FENCE_OPEN = /^```([\w+#.-]*)\s*$/;
 const FENCE_CLOSE = /^```\s*$/;
@@ -25,6 +27,9 @@ function isTableDivider(line: string): boolean {
   const trimmed = line.trim();
   return trimmed.includes('-') && /^[|\s:-]+$/.test(trimmed) && trimmed.includes('|');
 }
+
+/** 列表项：- xxx、* xxx、1. xxx、1) xxx */
+const LIST_ITEM = /^\s*([-*]|\d+[.)])\s+(.+)$/;
 
 function splitRow(line: string): string[] {
   return line
@@ -105,6 +110,26 @@ export function parseRich(input: string): Segment[] {
         continue;
       }
 
+      // 列表：连续的 - / * / 1. 开头行归成一组
+      const listMatch = line.match(LIST_ITEM);
+      if (listMatch) {
+        flush();
+        const items: string[] = [];
+        const ordered = /^\d/.test(listMatch[1] ?? '');
+        let j = i;
+
+        while (j < lines.length) {
+          const itemMatch = (lines[j] ?? '').match(LIST_ITEM);
+          if (!itemMatch) break;
+          items.push(itemMatch[2] ?? '');
+          j += 1;
+        }
+
+        out.push({ kind: 'list', ordered, items });
+        i = j - 1;
+        continue;
+      }
+
       buffer.push(line);
       continue;
     }
@@ -138,6 +163,8 @@ export function plainText(input: string): string {
     // 表格：分隔行整行删掉，竖线换空格，预览里不该出现一堆 |
     .replace(/^\|?[\s:-]+\|[\s:|-]*$/gm, ' ')
     .replace(/\|/g, ' ')
+    // 列表：去掉行首的 - / * / 1.
+    .replace(/^\s*([-*]|\d+[.)])\s+/gm, '')
     .replace(WIKI, '$1')
     .replace(/`([^`\n]+)`/g, '$1')
     .replace(/\s+/g, ' ')

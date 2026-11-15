@@ -2133,3 +2133,20 @@ mark.hit {
 .table-wrap tr:hover td {
   background: var(--bg-deep);
 }
+
+/* 列表：清单是笔记里最常见的结构 */
+.md-list {
+  margin: 12px 0;
+  padding-left: 22px;
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--ink-2);
+}
+
+.md-list li {
+  margin: 3px 0;
+}
+
+.md-list li::marker {
+  color: var(--ink-3);
+}
