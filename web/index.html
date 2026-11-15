@@ -36,6 +36,21 @@
         letter-spacing: 0.08em;
       }
     </style>
+    <script>
+      // 在样式生效前把主题定下来：否则深色模式会先闪一下浅色底
+      (function () {
+        try {
+          var saved = localStorage.getItem('nicenotes.theme') || 'auto';
+          var dark = saved === 'dark' || (saved === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.colorScheme = 'dark';
+          }
+        } catch (error) {
+          /* 读不到就按浅色走 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
