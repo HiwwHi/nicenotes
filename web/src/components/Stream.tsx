@@ -80,6 +80,16 @@ export function Stream({
     setSelected(new Set());
   }, []);
 
+  // 多选时按 Esc 退出。App 那层的 Esc 只管搜索和设置，管不到这里
+  useEffect(() => {
+    if (!selectMode) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') exitSelect();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectMode, exitSelect]);
+
   const changeOrder = useCallback((next: Order) => {
     setOrder(next);
     // 每次点「随机」都换一个 seed，等于重新洗一遍牌
