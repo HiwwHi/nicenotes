@@ -4,7 +4,7 @@ import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
 import { snippet, type SearchHit } from '../lib/search';
 import type { StoredNote } from '../types';
-import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, LinkIcon, PencilIcon, TrashIcon } from './Icons';
 import { Marked, Rich } from './Rich';
 
 interface Props {
@@ -26,6 +26,8 @@ interface Props {
   selectMode?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  /** 顺着内链跳过来时，指向来处，让用户能退回去 */
+  backTo?: { title: string; onClick: () => void };
 }
 
 export function NoteItem({
@@ -43,6 +45,7 @@ export function NoteItem({
   selectMode,
   selected,
   onSelect,
+  backTo,
 }: Props) {
   const now = Date.now();
   const { title, rest } = splitBody(note.body);
@@ -124,6 +127,13 @@ export function NoteItem({
 
       {expanded && (
         <div className="item-open">
+          {backTo && (
+            <button type="button" className="back-link" onClick={backTo.onClick}>
+              <ArrowLeftIcon size={13} />
+              回到「{backTo.title}」
+            </button>
+          )}
+
           {rest && (
             <div className="item-body">
               <Rich text={rest} marks={marks} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
@@ -44,6 +44,9 @@ export function Stream({
   onClearQuery,
 }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
+  /** 顺着内链跳转走过的路径，用来退回去 */
+  const [backStack, setBackStack] = useState<string[]>([]);
+  const openIdRef = useRef<string | null>(null);
   // 固定在这一刻：流的分组和「多久以前」不需要秒级刷新
   const [now] = useState(() => Date.now());
 
@@ -176,11 +179,28 @@ export function Stream({
   }, [openId, alive]);
 
   const jump = useCallback((id: string) => {
+    const previous = openIdRef.current;
+    // 从 A 跳到 B，得记住 A —— 顺着内链读下去之后要能退回来
+    if (previous && previous !== id) setBackStack((stack) => [...stack, previous]);
+
+    openIdRef.current = id;
     setOpenId(id);
     requestAnimationFrame(() => {
       document.getElementById(`note-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, []);
+
+  function goBack(): void {
+    const previous = backStack[backStack.length - 1];
+    if (!previous) return;
+
+    setBackStack((stack) => stack.slice(0, -1));
+    openIdRef.current = previous;
+    setOpenId(previous);
+    requestAnimationFrame(() => {
+      document.getElementById(`note-${previous}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
 
   /** 正文里点了 [[某条笔记]] 就跳过去；找不到就说一声，不装作没发生 */
   useEffect(() => {
@@ -213,8 +233,15 @@ export function Stream({
   }, [alive, heroId, jump, onClearQuery, searching]);
 
   function toggle(id: string) {
-    setOpenId((current) => (current === id ? null : id));
+    const next = openId === id ? null : id;
+    openIdRef.current = next;
+    setOpenId(next);
+    // 自己点开的条目，不算「顺着内链跳过来的」，清掉返回路径
+    if (next) setBackStack([]);
   }
+
+  const backNote =
+    backStack.length > 0 ? alive.find((note) => note.id === backStack[backStack.length - 1]) : undefined;
 
   const renderNote = (note: StoredNote) => (
     <NoteItem
@@ -231,6 +258,11 @@ export function Stream({
       selectMode={selectMode}
       selected={selected.has(note.id)}
       onSelect={() => toggleSelect(note.id)}
+      backTo={
+        openId === note.id && backNote && backNote.id !== note.id
+          ? { title: plainText(splitBody(backNote.body).title) || '刚才那条', onClick: goBack }
+          : undefined
+      }
     />
   );
 
