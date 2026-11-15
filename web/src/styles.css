@@ -2048,3 +2048,58 @@ mark.hit {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------- 打印 */
+/*
+ * Ctrl+P 只留正文：顶栏、按钮、提示条都去掉，卡片里没翻面的部分也不再
+ * 模糊 —— 打印出来是完整内容，不是「想不起来」那一版。
+ */
+@media print {
+  .top,
+  .searchbox,
+  .stream-tools,
+  .item-actions,
+  .bulk-bar,
+  .toast,
+  .intro,
+  .reveal-btn,
+  .grades,
+  .review-foot,
+  .related,
+  .back-link,
+  .code-copy,
+  .draft-badge {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .card,
+  .item {
+    box-shadow: none;
+    border-color: #d8d8d8;
+    break-inside: avoid;
+  }
+
+  .card-veil {
+    max-height: none;
+    overflow: visible;
+    border-top-color: #d8d8d8;
+  }
+
+  .card-veil p {
+    filter: none !important;
+  }
+
+  .card-veil-fade {
+    display: none !important;
+  }
+
+  .code {
+    background: #f5f5f5;
+    border-color: #d8d8d8;
+  }
+}
