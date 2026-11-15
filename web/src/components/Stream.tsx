@@ -105,11 +105,24 @@ export function Stream({
   }, []);
 
   const alive = useMemo(() => notes.filter((note) => !note.deletedAt), [notes]);
-  const searching = query.trim().length > 0;
+  /**
+   * 输入停顿一下再搜。
+   *
+   * 原来的做法是每敲一个键就重算一遍，中文用输入法时拼音还没选字，
+   * 组合中的中间态会把列表刷得上下跳。停 220ms 再算，既贴合手速，
+   * 也就不用去猜 composition 事件的时序。
+   */
+  const [searchTerm, setSearchTerm] = useState(query);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchTerm(query), 220);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const searching = searchTerm.trim().length > 0;
 
   const result = useMemo(
-    () => (searching ? searchNotes(alive, query, now) : null),
-    [alive, query, searching, now],
+    () => (searching ? searchNotes(alive, searchTerm, now) : null),
+    [alive, searchTerm, searching, now],
   );
 
   /**
