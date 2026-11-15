@@ -72,6 +72,13 @@ export function NoteItem({
     toast(ok ? '整条复制好了' : '复制不了，浏览器没给剪贴板权限', ok ? 'ok' : 'warn');
   }
 
+  /** 复制成内链写法，粘到别的笔记里就成了一条虚线链接 */
+  async function copyLink() {
+    const target = plainText(title) || note.body.slice(0, 20);
+    const ok = await writeClipboard(`[[${target}]]`);
+    toast(ok ? `复制了 [[${target}]]，粘到别的笔记里就行` : '复制不了', ok ? 'ok' : 'warn');
+  }
+
   return (
     <li id={`note-${note.id}`} className={`item ${expanded && !selectMode ? 'is-open' : ''} ${featured ? 'is-featured' : ''} ${selected ? 'is-selected' : ''}`}>
       <button
@@ -179,6 +186,11 @@ export function NoteItem({
             <button type="button" className="link" onClick={() => void copyNote()}>
               <CopyIcon />
               复制
+            </button>
+            <span className="dot-sep" />
+            <button type="button" className="link" onClick={() => void copyLink()}>
+              <LinkIcon />
+              引用
             </button>
             <span className="dot-sep" />
             <button type="button" className="link" onClick={onArchive}>
