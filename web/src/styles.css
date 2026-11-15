@@ -1124,6 +1124,12 @@ mark.hit {
   color: var(--ink);
   letter-spacing: 0.004em;
   overflow-wrap: anywhere;
+  /* 标题一行写满 200 字的时候，不该把整屏都占掉 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .item-preview {
