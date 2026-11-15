@@ -3,7 +3,7 @@ import { hasBackend } from '../lib/api';
 import { pastLabel } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
-import { buildExport, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp } from '../store';
+import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp } from '../store';
 
 interface Props {
   theme: Theme;
@@ -95,6 +95,23 @@ export function Settings({ theme, onTheme }: Props) {
     link.click();
     URL.revokeObjectURL(url);
     toast('已导出 Markdown，这个文件能原样导回来');
+  }
+
+  function doExportHtml() {
+    const html = buildHtml();
+    if (!html.trim()) {
+      toast('还没有笔记可以导出', 'warn');
+      return;
+    }
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast('导出了一个 HTML，双击就能看');
   }
 
   async function doImportMarkdown(list: FileList) {
@@ -272,6 +289,9 @@ export function Settings({ theme, onTheme }: Props) {
           </button>
           <button type="button" className="btn btn-ghost" onClick={doExportMarkdown}>
             导出 Markdown
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={doExportHtml}>
+            导出 HTML
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => fileRef.current?.click()}>
             从 JSON 导入

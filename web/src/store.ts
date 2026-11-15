@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, hasBackend } from './lib/api';
 import { dayKey, splitBody } from './lib/date';
+import { plainText } from './lib/rich';
 import * as local from './lib/db';
 import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
 import { GRADE_META, applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
@@ -861,6 +862,73 @@ export async function importMarkdownFiles(
   }
 
   return { added: incoming.length, skipped };
+}
+
+/** 转义 HTML，导出独立页面用 */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * 导出成一个直接在浏览器里打开的 HTML。
+ *
+ * 和 Markdown 那份不一样：那个是给工具读的，这个是给人读的 ——
+ * 发给不装应用的人，双击就能看，排版也保住了。
+ */
+export function buildHtml(): string {
+  const notes = visibleNotes(state.notes).sort((a, b) => b.createdAt - a.createdAt);
+
+  const items = notes
+    .map((note) => {
+      const { title, rest } = splitBody(note.body);
+      const date = new Date(note.createdAt).toLocaleDateString('zh-CN');
+      return `  <article>
+    <h2>${escapeHtml(plainText(title))}</h2>
+    <p class="meta">${escapeHtml(date)}</p>
+    <pre>${escapeHtml(rest)}</pre>
+  </article>`;
+    })
+    .join('\n');
+
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NiceNotes · ${notes.length} 条笔记</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 40px 20px 80px; background: #f7f4ee; color: #2a2722;
+    font: 16px/1.9 "Noto Serif SC", "Songti SC", Georgia, serif;
+  }
+  main { max-width: 680px; margin: 0 auto; }
+  article {
+    background: #fff; border: 1px solid #e6e0d4; border-radius: 14px;
+    padding: 24px 26px; margin-bottom: 18px;
+  }
+  h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; line-height: 1.5; }
+  .meta { margin: 0 0 14px; color: #9a9488; font-size: 12px; font-family: system-ui, sans-serif; }
+  pre {
+    margin: 0; white-space: pre-wrap; word-break: break-word;
+    font: 14px/1.85 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (max-width: 520px) {
+    body { padding: 20px 14px 60px; }
+    article { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<main>
+${items}
+</main>
+</body>
+</html>`;
 }
 
 /**
