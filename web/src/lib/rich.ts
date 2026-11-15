@@ -82,9 +82,10 @@ export function parseRich(input: string): Segment[] {
     body.push(line);
   }
 
-  // 围栏没闭合（写到一半就保存了）：原样还回去，别把后面的内容吞掉
+  // 围栏没闭合：当成代码块一直延续到文末。
+  // 写在笔记里基本都是「忘了收尾」，退回去当普通文本反而把格式丢了。
   if (fenced) {
-    buffer.push(`\`\`\`${lang}`, ...body);
+    out.push({ kind: 'block', text: body.join('\n'), lang });
   }
   flush();
 
