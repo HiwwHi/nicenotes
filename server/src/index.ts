@@ -37,6 +37,12 @@ app.get('/api/health', (c) => c.json({ ok: true, now: Date.now(), allowRegister 
 app.post('/api/auth/register', async (c) => {
   if (!allowRegister) return c.json({ error: '这台服务器没开放注册' }, 403);
 
+  // 登录有限流，注册同样要有：不然一个脚本就能把库塞满
+  const registerKey = `reg:${c.req.header('x-forwarded-for') ?? 'local'}`;
+  if (tooManyAttempts(registerKey)) {
+    return c.json({ error: '注册太频繁，过十分钟再试' }, 429);
+  }
+
   const body = await c.req.json().catch(() => null);
   const email = normalizeEmail(String(body?.email ?? ''));
   const password = String(body?.password ?? '');
