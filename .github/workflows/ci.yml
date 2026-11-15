@@ -20,17 +20,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
 
-      - name: 后端冒烟测试
-        run: |
-          node server/dist/index.js > /tmp/server.log 2>&1 &
-          SERVER_PID=$!
-          for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:8787/api/health > /dev/null 2>&1; then break; fi
-            sleep 0.5
-          done
-          if ! curl -fsS http://127.0.0.1:8787/api/health; then
-            echo '--- server 日志 ---'
-            cat /tmp/server.log
-            exit 1
-          fi
-          kill $SERVER_PID
+      - name: 后端接口自检
+        # 自己起临时进程、用临时库，跑完就删。覆盖注册登录、鉴权、
+        # 首次推送、增量游标、冲突判定、历史留档、登出失效，共 22 项。
+        run: npm run check:server
