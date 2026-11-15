@@ -207,7 +207,7 @@ export default function App() {
                 onClick={() => {
                   if (!query && searches.length > 0) setHistoryOpen(true);
                 }}
-                placeholder="搜笔记，按相关度找"
+                placeholder="搜笔记，汉字或拼音首字母"
                 spellCheck={false}
                 aria-label="搜索笔记"
               />
