@@ -308,7 +308,7 @@ export function Stream({
         {count === 0 ? (
           <div className="no-result">
             <SearchIcon size={22} />
-            <p className="no-result-title">没有找到「{query.trim()}」</p>
+            <p className="no-result-title">没有找到「{searchTerm.trim()}」</p>
             <p className="no-result-hint">
               是按字和词的相关度找的，不要求整句一模一样。换个说法、或者少打几个字试试；也可以打拼音首字母，比如 ytw。
             </p>
