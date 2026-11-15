@@ -10,6 +10,22 @@ const TOKEN_KEY = 'nicenotes.token';
 const NEW_PER_DAY = 3;
 const DAY = 86_400_000;
 
+/**
+ * 生成笔记 id。
+ *
+ * crypto.randomUUID 只在安全上下文（HTTPS 或 localhost）里有。用
+ * http://192.168.x.x:8787 这种地址打开时它是 undefined，
+ * 直接调用会抛 TypeError —— 表现为「一记笔记就白屏」。
+ */
+function newId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  const random = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 8);
+  return `n-${Date.now().toString(36)}-${random}`;
+}
+
 export interface Toast {
   id: number;
   text: string;
@@ -282,7 +298,7 @@ async function seedIfEmpty(): Promise<void> {
   const notes: StoredNote[] = SEED.map((item, index) => {
     const created = now - item.daysAgo * DAY - index * 37 * 60_000;
     return {
-      id: crypto.randomUUID(),
+      id: newId(),
       body: `${item.title}\n${item.rest}`,
       createdAt: created,
       updatedAt: created,
@@ -356,7 +372,7 @@ export async function addNote(body: string): Promise<boolean> {
   if (!text) return false;
   const now = Date.now();
   const note: StoredNote = {
-    id: crypto.randomUUID(),
+    id: newId(),
     body: text.slice(0, 20_000),
     createdAt: now,
     updatedAt: now,
@@ -760,7 +776,7 @@ export async function importJson(raw: string): Promise<number> {
 
   for (const item of incoming) {
     if (!item?.body) continue;
-    const id = typeof item.id === 'string' ? item.id : crypto.randomUUID();
+    const id = typeof item.id === 'string' ? item.id : newId();
     const existing = state.notes.find((note) => note.id === id);
     const updatedAt = Number(item.updatedAt ?? now);
     const note: StoredNote = {
@@ -818,7 +834,7 @@ export async function importMarkdownFiles(
 
       seen.add(hash);
       incoming.push({
-        id: crypto.randomUUID(),
+        id: newId(),
         body,
         createdAt: now,
         updatedAt: now,
