@@ -56,6 +56,43 @@ const emptyState: AppState = {
 };
 
 let state: AppState = emptyState;
+
+/**
+ * 同一个浏览器里可能同时开着好几个实例：浏览器的标签页、装成应用的独立窗口。
+ * 不加这一层，A 里写的笔记 B 要刷新才看得见，甚至会各自覆盖。
+ */
+const channel =
+  typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('nicenotes-tab');
+
+let announceTimer: ReturnType<typeof setTimeout> | null = null;
+let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+function announceChange(): void {
+  if (!channel) return;
+  if (announceTimer) clearTimeout(announceTimer);
+  // 连续写（比如批量操作）时合并成一次，别让别的标签页反复重载
+  announceTimer = setTimeout(() => channel.postMessage({ type: 'changed' }), 80);
+}
+
+async function reloadFromDisk(): Promise<void> {
+  if (!state.ready) return;
+
+  const notes = await local.readNotes();
+  set({ notes });
+
+  // 正在看的那条可能被另一个标签页删了
+  if (state.currentId && !notes.some((note) => note.id === state.currentId && !note.deletedAt)) {
+    advance();
+  }
+}
+
+if (channel) {
+  channel.addEventListener('message', (event: MessageEvent<{ type?: string }>) => {
+    if (event.data?.type !== 'changed') return;
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => void reloadFromDisk(), 120);
+  });
+}
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<AppState>): void {
@@ -165,6 +202,7 @@ async function store(note: StoredNote): Promise<void> {
     : [...state.notes, note];
   set({ notes });
   await local.putNote(note);
+  announceChange();
 }
 
 /* ---------------------------------------------------------------- 初始化 */
@@ -397,6 +435,7 @@ async function patchNotes(ids: string[], patch: Partial<StoredNote>): Promise<St
   if (changed.length === 0) return [];
   set({ notes: next });
   await local.putNotes(changed);
+  announceChange();
   return changed;
 }
 
