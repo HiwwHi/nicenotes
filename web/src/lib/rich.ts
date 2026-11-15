@@ -135,6 +135,9 @@ export function plainText(input: string): string {
   return input
     .replace(/^```[\w+#.-]*\s*$/gm, ' ')
     .replace(/```/g, ' ')
+    // 表格：分隔行整行删掉，竖线换空格，预览里不该出现一堆 |
+    .replace(/^\|?[\s:-]+\|[\s:|-]*$/gm, ' ')
+    .replace(/\|/g, ' ')
     .replace(WIKI, '$1')
     .replace(/`([^`\n]+)`/g, '$1')
     .replace(/\s+/g, ' ')
