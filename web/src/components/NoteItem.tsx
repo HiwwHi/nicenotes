@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { writeClipboard } from '../lib/clipboard';
-import { dueLabel, pastLabel, splitBody } from '../lib/date';
+import { dueLabel, fullLabel, pastLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { isNew } from '../lib/scheduler';
 import { snippet, type SearchHit } from '../lib/search';
@@ -101,7 +101,7 @@ export function NoteItem({
           )}
 
           <span className="item-meta">
-            <span>{pastLabel(note.createdAt, now)}</span>
+            <span title={fullLabel(note.createdAt)}>{pastLabel(note.createdAt, now)}</span>
             {note.reviewCount > 0 && (
               <>
                 <span className="dot-sep" />

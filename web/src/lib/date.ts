@@ -79,3 +79,10 @@ export function dayGroupLabel(ts: number, now = Date.now()): string {
   return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
 }
 
+
+/** 精确到分钟，给 title 提示用 —— 列表里显示的是「3 天前」这种相对时间 */
+export function fullLabel(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
