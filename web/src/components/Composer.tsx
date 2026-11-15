@@ -83,11 +83,20 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     area.setSelectionRange(area.value.length, area.value.length);
   }, []);
 
+  const submitRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
         onClose();
+        return;
+      }
+
+      // 在预览态也能存。那时 textarea 不在页面上，只有全局监听接得住
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        submitRef.current();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -104,6 +113,10 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
       onClose();
     }
   }
+
+  submitRef.current = () => {
+    void submit();
+  };
 
   async function loadHistory() {
     if (!noteId) return;
@@ -165,13 +178,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             spellCheck={false}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                void submit();
-                return;
-              }
-
-              // 写代码时 Tab 该缩进，而不是把焦点跳到下一个控件上
+              // Ctrl+Enter 走全局监听，这里只管 Tab 缩进
               if (event.key === 'Tab') {
                 event.preventDefault();
                 const area = event.currentTarget;
