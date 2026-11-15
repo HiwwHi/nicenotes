@@ -812,6 +812,32 @@ mark.hit {
   text-wrap: pretty;
 }
 
+/* 横屏手机只有 390 高，卡片按桌面尺寸会把「想不起来，看内容」顶到屏幕外 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .card {
+    padding: 18px 22px 15px;
+  }
+
+  .card-title {
+    font-size: 19px;
+    line-height: 1.4;
+  }
+
+  .card-veil {
+    margin-top: 12px;
+    padding-top: 12px;
+    max-height: 92px;
+  }
+
+  .review-meta {
+    margin-bottom: 8px;
+  }
+
+  .lead {
+    margin-bottom: 4px;
+  }
+}
+
 .card-rest {
   margin-top: 22px;
   padding-top: 22px;
