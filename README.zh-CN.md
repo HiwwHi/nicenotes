@@ -243,24 +243,36 @@ nicenotes/
 │  │  ├─ lib/
 │  │  │  ├─ scheduler.ts      SM-2 改良版排期
 │  │  │  ├─ search.ts         二元组切分 + TF-IDF 相关度检索
+│  │  │  ├─ pinyin.ts         汉字转拼音首字母（表是离线生成的）
+│  │  │  ├─ rich.ts           正文解析：围栏、行内码、表格、列表、内链
+│  │  │  ├─ syntax.ts         代码着色，六类 token
 │  │  │  ├─ db.ts             IndexedDB 手写封装，不引库
 │  │  │  ├─ api.ts            后端客户端
-│  │  │  └─ stats.ts          连续天数、12 周热力图
+│  │  │  ├─ markdown-import.ts 导入 .md 时按 `## ` 拆条
+│  │  │  ├─ date.ts           日期分组的文案
+│  │  │  ├─ stats.ts          连续天数、12 周热力图
+│  │  │  ├─ history.ts        最近搜过的词
+│  │  │  ├─ shuffle.ts        带种子的洗牌（顺序稳定）
+│  │  │  ├─ theme.ts          浅色 / 深色 / 跟随系统
+│  │  │  └─ clipboard.ts      写剪贴板（带 execCommand 兜底）
 │  │  ├─ components/
 │  │  │  ├─ Stream.tsx        一个流：主角卡 + 按天分组的全部笔记
 │  │  │  ├─ ReviewCard.tsx    遮住后半、三个评分按钮
 │  │  │  ├─ PeekCard.tsx      没有复习任务时，随手翻到的一条
 │  │  │  ├─ NoteItem.tsx      流里的一条，点开看全文和相近的笔记
-│  │  │  ├─ Composer.tsx      记一条 / 编辑 / 历史版本
+│  │  │  ├─ Rich.tsx          正文渲染 + 代码块复制
+│  │  │  ├─ Composer.tsx      记一条 / 编辑 / 预览 / 历史版本
 │  │  │  └─ Settings.tsx      账号、记录、外观、数据
 │  │  └─ styles.css           全部样式，配色走 CSS 变量
-│  └─ public/                 图标、manifest、service worker（离线缓存）
+│  └─ public/                 图标、manifest、iOS 描述文件、service worker
 ├─ server/                    后端：Hono + node:sqlite
 │  └─ src/
 │     ├─ index.ts             路由、鉴权中间件、静态托管
 │     ├─ auth.ts              scrypt 密码、会话令牌、限流
 │     ├─ sync.ts              增量同步与冲突合并
 │     └─ db.ts                表结构与查询
+├─ scripts/check-server.mjs   后端自检：起临时进程跑 22 项接口检查
+├─ docs/DEPLOY.md             从空机器到手机上能用的部署步骤
 ├─ Dockerfile                 两阶段构建，产物镜像只带运行时
 └─ docker-compose.yml         起服务 + 数据卷
 ```
