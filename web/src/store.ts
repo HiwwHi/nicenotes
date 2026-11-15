@@ -3,7 +3,7 @@ import { ApiError, api, hasBackend } from './lib/api';
 import { dayKey, splitBody } from './lib/date';
 import * as local from './lib/db';
 import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
-import { applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
+import { GRADE_META, applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
 import type { Account, Grade, StoredNote } from './types';
 
 const TOKEN_KEY = 'nicenotes.token';
@@ -485,6 +485,8 @@ export async function grade(id: string, value: Grade): Promise<void> {
 
   const now = Date.now();
   const wasNew = isNew(note);
+  // 手滑点到「忘记了」会把间隔直接打回原点，得留一条退路
+  const before = { memory: note.memory, reviewCount: note.reviewCount };
   const graded: StoredNote = { ...applyGrade(note, value, now), baseUpdatedAt: note.baseUpdatedAt };
   await store(graded);
 
@@ -502,6 +504,41 @@ export async function grade(id: string, value: Grade): Promise<void> {
 
   advance();
   scheduleSync();
+
+  toast(GRADE_META.find((item) => item.grade === value)?.label ?? '记下了', 'ok', {
+    label: '撤销',
+    run: () => void undoGrade(id, before.memory, before.reviewCount, log, wasNew),
+  });
+}
+
+/** 把上一次评分退回去 */
+async function undoGrade(
+  id: string,
+  memory: StoredNote['memory'],
+  reviewCount: number,
+  log: Record<string, number>,
+  wasNew: boolean,
+): Promise<void> {
+  const note = state.notes.find((item) => item.id === id);
+  if (!note) return;
+
+  await store({ ...note, memory, reviewCount, updatedAt: Date.now() });
+
+  // 今天的计数和「本轮已看过」也一起退回去，否则撤销完却少算一次
+  const today = dayKey(Date.now());
+  const reverted = { ...log };
+  if ((reverted[today] ?? 0) > 0) reverted[today] = (reverted[today] ?? 0) - 1;
+  else delete reverted[today];
+
+  const newToday = wasNew ? Math.max(0, state.newToday - 1) : state.newToday;
+  const sessionDone = state.sessionDone.filter((item) => item !== id);
+
+  set({ log: reverted, newToday, sessionDone });
+  void local.writeMeta('log', reverted);
+  void local.writeMeta('newToday', newToday);
+
+  scheduleSync();
+  toast('撤销了，下次复习时间也退回去了');
 }
 
 export function reveal(): void {
