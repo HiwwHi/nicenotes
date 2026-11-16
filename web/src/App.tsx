@@ -340,6 +340,17 @@ export default function App() {
         </div>
       </header>
 
+      {/*
+       * 断了网也得让人心里有数：笔记都还在，只是还没传上去。只给那一颗小
+       * 圆点变个色，多数人根本不会注意到。
+       */}
+      {app.account && !app.online && (
+        <div className="offline-bar" role="status">
+          <span className="offline-dot" aria-hidden="true" />
+          现在没有网络 · 笔记都存在这台设备上，联网后自动同步
+        </div>
+      )}
+
       <main className="main">
         {view === 'stream' ? (
           <Stream

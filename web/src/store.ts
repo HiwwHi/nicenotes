@@ -43,6 +43,8 @@ export interface AppState {
   syncing: boolean;
   lastSyncAt: number | null;
   syncError: string | null;
+  /** 浏览器报告的网络状态。断网时要说清楚「东西还在本机」，而不是让那个小圆点自己去红 */
+  online: boolean;
   /** 这台服务器开不开注册。关掉之后界面里不该出现注册入口 */
   allowRegister: boolean;
   currentId: string | null;
@@ -62,6 +64,7 @@ const emptyState: AppState = {
   syncing: false,
   lastSyncAt: null,
   syncError: null,
+  online: true,
   allowRegister: true,
   currentId: null,
   revealed: false,
@@ -319,10 +322,34 @@ async function seedIfEmpty(): Promise<void> {
 
 let initializing = false;
 
+/**
+ * 盯住网络状态。
+ *
+ * navigator.onLine 只说明「有没有网卡」，连不上服务器它照样是 true —— 所以
+ * 这里只管真断网。服务端挂了属于另一回事，由 syncError 那条路负责提示。
+ * 恢复联网时立刻补一次同步，不用等用户再写一条笔记才想起来。
+ */
+let onlineBound = false;
+
+function bindOnlineEvents(): void {
+  if (onlineBound || typeof window === 'undefined') return;
+  onlineBound = true;
+
+  const sync = () => set({ online: navigator.onLine });
+  sync();
+
+  window.addEventListener('offline', sync);
+  window.addEventListener('online', () => {
+    sync();
+    if (getToken() && hasBackend) void syncNow(true);
+  });
+}
+
 export async function init(): Promise<void> {
   if (state.ready || initializing) return;
   initializing = true;
   try {
+    bindOnlineEvents();
     const notes = await local.readNotes();
     const log = (await local.readMeta<Record<string, number>>('log')) ?? {};
     const today = dayKey(Date.now());

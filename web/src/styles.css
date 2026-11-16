@@ -299,6 +299,31 @@ mark.hit {
   -webkit-backdrop-filter: saturate(180%) blur(12px);
 }
 
+/*
+ * 断网提示。用「提醒」色而不是红色：这不是出错，数据好好地在本地，
+ * 只是还没传上去。红会让人以为丢了东西。
+ */
+.offline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 20px;
+  background: var(--mid-soft);
+  color: var(--mid);
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+}
+
+.offline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mid);
+  flex-shrink: 0;
+}
+
 .brand {
   display: flex;
   align-items: center;
