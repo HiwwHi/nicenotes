@@ -2235,3 +2235,9 @@ mark.hit {
 .md-list li::marker {
   color: var(--ink-3);
 }
+
+/* 搜索栏里「含拼音首字母匹配」这个说明 */
+.search-pinyin-hint {
+  color: var(--accent);
+  opacity: 0.8;
+}

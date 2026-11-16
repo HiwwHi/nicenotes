@@ -57,6 +57,13 @@ export interface SearchResult {
   terms: string[];
   /** 结果里所有命中的单元（含同义展开），用于高亮正文 */
   marks: string[];
+  /**
+   * 有没有结果是靠拼音首字母才命中的。
+   *
+   * 这种命中在正文里标不出来（「ytw」和「以太网」没有共同的字），
+   * 界面上得说明一句，否则用户看着一条完全没高亮的结果会以为搜错了。
+   */
+  usedPinyin: boolean;
 }
 
 interface Doc {
@@ -137,7 +144,7 @@ const PINYIN_WEIGHT = 7;
  */
 export function searchNotes(notes: StoredNote[], query: string, now = Date.now()): SearchResult {
   const text = query.trim();
-  if (!text) return { hits: [], terms: [], marks: [] };
+  if (!text) return { hits: [], terms: [], marks: [], usedPinyin: false };
 
   const alive = notes.filter((note) => !note.deletedAt);
   const groups = text
@@ -150,7 +157,7 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
     const hits = alive
       .filter((note) => note.body.toLowerCase().includes(text.toLowerCase()))
       .map<SearchHit>((note) => ({ note, score: 100, coverage: 1, matched: [text] }));
-    return { hits, terms: [text], marks: [text] };
+    return { hits, terms: [text], marks: [text], usedPinyin: false };
   }
 
   const allTerms = uniq(groups.flat());
@@ -194,8 +201,11 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
     }
 
     // 拼音首字母命中：权重给得比精确词低一些，长缩写更可信
+    let viaPinyin = false;
     if (latin && doc.initials.includes(latin)) {
       raw += PINYIN_WEIGHT + Math.min(6, latin.length - 2) * 1.5;
+      // 只靠拼音才进来的：正文里没有任何字能和查询对上，高亮不出来
+      viaPinyin = matched.size === 0;
     }
 
     if (raw <= 0) return null;
@@ -209,11 +219,11 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
     const matchedIdf = [...matched].reduce((sum, term) => sum + idfOf(term), 0);
     const coverage = totalIdf > 0 ? matchedIdf / totalIdf : 0;
 
-    return { doc, raw, matched: [...matched], coverage };
+    return { doc, raw, matched: [...matched], coverage, viaPinyin };
   });
 
   const kept = scored.filter((item): item is NonNullable<typeof item> => item !== null);
-  if (kept.length === 0) return { hits: [], terms: allTerms, marks: [] };
+  if (kept.length === 0) return { hits: [], terms: allTerms, marks: [], usedPinyin: false };
 
   kept.sort((a, b) => b.raw - a.raw);
   const top = kept[0]!.raw;
@@ -226,7 +236,9 @@ export function searchNotes(notes: StoredNote[], query: string, now = Date.now()
     matched: item.matched,
   }));
 
-  return { hits, terms: allTerms, marks: uniq(hits.flatMap((hit) => hit.matched)) };
+  const usedPinyin = kept.some((item) => item.viaPinyin);
+
+  return { hits, terms: allTerms, marks: uniq(hits.flatMap((hit) => hit.matched)), usedPinyin };
 }
 
 /**

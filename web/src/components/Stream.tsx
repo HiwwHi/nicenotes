@@ -357,6 +357,16 @@ export function Stream({
             按关联度排序
             <span className="dot-sep" />
             {count > 0 ? `${count} 条` : '没有匹配'}
+            {/*
+             * 拼音命中在正文里标不出来（ytw 和「以太网」没有共同字符），
+             * 不说一句的话，一条没高亮的结果看着像搜错了。
+             */}
+            {result.usedPinyin && (
+              <>
+                <span className="dot-sep" />
+                <span className="search-pinyin-hint">含拼音首字母匹配</span>
+              </>
+            )}
           </span>
           <button type="button" className="link" onClick={onClearQuery}>
             清除
