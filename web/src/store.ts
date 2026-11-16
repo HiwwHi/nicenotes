@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, hasBackend } from './lib/api';
 import { dayKey, splitBody } from './lib/date';
-import { plainText } from './lib/rich';
+import { plainText, splitLinks } from './lib/rich';
 import * as local from './lib/db';
 import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
 import { GRADE_META, applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
@@ -901,6 +901,22 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * 正文转成 HTML：该转义的转义，写着的网址留成可点的链接。
+ *
+ * 切段在转义之前做 —— 先转义再找网址的话，「&」已经变成「&amp;」，
+ * 带查询串的地址会被切错位置。
+ */
+function htmlBody(text: string): string {
+  return splitLinks(text)
+    .map((segment) => {
+      if (segment.kind !== 'link') return escapeHtml(segment.text);
+      const href = escapeHtml(segment.text);
+      return `<a href="${href}" target="_blank" rel="noreferrer noopener">${href}</a>`;
+    })
+    .join('');
+}
+
+/**
  * 导出成一个直接在浏览器里打开的 HTML。
  *
  * 和 Markdown 那份不一样：那个是给工具读的，这个是给人读的 ——
@@ -916,7 +932,7 @@ export function buildHtml(): string {
       return `  <article>
     <h2>${escapeHtml(plainText(title))}</h2>
     <p class="meta">${escapeHtml(date)}</p>
-    <pre>${escapeHtml(rest)}</pre>
+    <pre>${htmlBody(rest)}</pre>
   </article>`;
     })
     .join('\n');
@@ -944,6 +960,7 @@ export function buildHtml(): string {
     margin: 0; white-space: pre-wrap; word-break: break-word;
     font: 14px/1.85 ui-monospace, SFMono-Regular, Menlo, monospace;
   }
+  a { color: #8d5a2c; text-decoration: none; border-bottom: 1px solid #e2cdb2; word-break: break-all; }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }
     article { padding: 18px; }

@@ -55,9 +55,14 @@ function splitRow(line: string): string[] {
  *
  * 只在「纯文字」片段上跑：行内代码和围栏里的内容不该变成可点链接 ——
  * 那里面出现 URL 是命令参数，不是让你点的。
+ *
+ * 导出 HTML 那一路也用它，保证两处对「哪一段算网址」的判断一致。
  */
-function splitUrl(text: string): Segment[] {
-  const parts: Segment[] = [];
+/** splitLinks 只会吐出这两种，类型收窄一点，调用方不用再挨个排除 */
+export type LinkPiece = { kind: 'text'; text: string } | { kind: 'link'; text: string };
+
+export function splitLinks(text: string): LinkPiece[] {
+  const parts: LinkPiece[] = [];
   URL_PATTERN.lastIndex = 0;
 
   let cursor = 0;
@@ -85,7 +90,7 @@ function splitInline(text: string): Segment[] {
   let cursor = 0;
   let found: RegExpExecArray | null;
   while ((found = INLINE.exec(text)) !== null) {
-    if (found.index > cursor) parts.push(...splitUrl(text.slice(cursor, found.index)));
+    if (found.index > cursor) parts.push(...splitLinks(text.slice(cursor, found.index)));
 
     if (found[1] !== undefined) {
       parts.push({ kind: 'inline', text: found[1] });
@@ -98,7 +103,7 @@ function splitInline(text: string): Segment[] {
 
     cursor = found.index + found[0].length;
   }
-  if (cursor < text.length) parts.push(...splitUrl(text.slice(cursor)));
+  if (cursor < text.length) parts.push(...splitLinks(text.slice(cursor)));
 
   return parts.length > 0 ? parts : [{ kind: 'text', text }];
 }
