@@ -1804,6 +1804,15 @@ mark.hit {
   color: var(--ink-3);
 }
 
+/* 接近 / 超过正文上限 */
+.tip-near {
+  color: var(--mid);
+}
+
+.tip-over {
+  color: var(--bad);
+}
+
 .sheet-actions {
   display: flex;
   gap: 8px;

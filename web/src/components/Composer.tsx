@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { timeLabel } from '../lib/date';
-import { authToken } from '../store';
+import { authToken, MAX_BODY } from '../store';
 import type { HistoryVersion } from '../types';
 import { CloseIcon } from './Icons';
 import { Rich } from './Rich';
@@ -222,6 +222,20 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             <span>
               <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 保存
             </span>
+            {/*
+             * 写到快满时才提示。平时不占地方，真要超了当场就知道，
+             * 不用等保存完看那条「只存了前 2 万字符」。
+             */}
+            {text.length > MAX_BODY * 0.85 && (
+              <>
+                <span className="dot-sep" />
+                <span className={text.length > MAX_BODY ? 'tip-over' : 'tip-near'}>
+                  {text.length > MAX_BODY
+                    ? `超了 ${text.length - MAX_BODY} 字，保存时会被截掉`
+                    : `已写 ${text.length} 字，上限 ${MAX_BODY}`}
+                </span>
+              </>
+            )}
           </div>
           <div className="sheet-actions">
             {mode === 'edit' && noteId ? (
