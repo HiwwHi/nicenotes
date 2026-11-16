@@ -180,8 +180,28 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             onKeyDown={(event) => {
               // Ctrl+Enter 走全局监听，这里只管 Tab 缩进
               if (event.key === 'Tab') {
-                event.preventDefault();
                 const area = event.currentTarget;
+
+                /*
+                 * Shift+Tab：行首有缩进就退一级；没有就放行，让焦点跳到上一个
+                 * 控件。全拦掉的话键盘用户被关在这个框里 —— 只能靠 Esc 或
+                 * Ctrl+Enter 出去，想按一下关闭按钮都做不到。
+                 */
+                if (event.shiftKey) {
+                  const { value, selectionStart } = area;
+                  const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+                  const lead = value.slice(lineStart, selectionStart);
+                  const strip = lead.endsWith('  ') ? 2 : lead.endsWith(' ') || lead.endsWith('\t') ? 1 : 0;
+
+                  if (strip === 0) return;
+
+                  event.preventDefault();
+                  area.setRangeText('', selectionStart - strip, selectionStart, 'end');
+                  setText(area.value);
+                  return;
+                }
+
+                event.preventDefault();
                 area.setRangeText('  ', area.selectionStart, area.selectionEnd, 'end');
                 setText(area.value);
               }
