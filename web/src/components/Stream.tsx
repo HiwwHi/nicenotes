@@ -83,14 +83,19 @@ export function Stream({
     setSelected(new Set());
   }, []);
 
-  // 多选时按 Esc 退出。App 那层的 Esc 只管搜索和设置，管不到这里
+  // 多选时按 Esc 退出。App 那层的 Esc 只管搜索和设置，管不到这里。
+  // 用捕获阶段并拦住冒泡：搜索 + 多选同时开着时，一次 Esc 只退最外面那层
+  // （多选），不会顺带把搜索词也清掉。
   useEffect(() => {
     if (!selectMode) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') exitSelect();
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        exitSelect();
+      }
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
   }, [selectMode, exitSelect]);
 
   const changeOrder = useCallback((next: Order) => {
@@ -289,11 +294,64 @@ export function Stream({
     exitSelect();
   }
 
+  /**
+   * 底部批量操作条。
+   *
+   * 抽成函数是因为搜索态和正常列表是两条渲染路径 —— 之前只有正常列表那
+   * 一条带它，于是「进了多选、又去搜了一下」时整个操作条消失，看着像
+   * 选择被取消了（其实状态还在，清空搜索又冒出来）。
+   *
+   * pool 是当前能看到的那些笔记：正常流里是全库，搜索时是命中项。
+   * 「全选」只选眼前这些，不会把搜不到的一起吞掉。
+   */
+  function renderBulkBar(pool: StoredNote[]) {
+    if (!selectMode) return null;
+
+    const ids = pool.map((note) => note.id);
+    const allPicked = ids.length > 0 && ids.every((id) => selected.has(id));
+
+    return (
+      <div className="bulk-bar">
+        <span className="bulk-count">已选 {selected.size} 条</span>
+
+        <div className="bulk-actions">
+          <button
+            type="button"
+            className="link"
+            disabled={ids.length === 0}
+            onClick={() => setSelected(allPicked ? new Set() : new Set(ids))}
+          >
+            {allPicked ? '取消全选' : '全选'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={selected.size === 0}
+            onClick={() => void bulkArchive()}
+          >
+            归档
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm link-danger"
+            disabled={selected.size === 0}
+            onClick={() => void bulkDelete()}
+          >
+            删除
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={exitSelect}>
+            完成
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (searching && result) {
     const count = result.hits.length;
 
     return (
-      <div className="stream is-searching">
+      <div className={`stream is-searching ${selectMode ? 'is-selecting' : ''}`}>
         <div className="stream-bar">
           <span>
             按关联度排序
@@ -328,10 +386,15 @@ export function Stream({
                 onArchive={() => void archiveNote(hit.note.id)}
                 related={openId === hit.note.id ? relatedHits : []}
                 onJump={jump}
+                selectMode={selectMode}
+                selected={selected.has(hit.note.id)}
+                onSelect={() => toggleSelect(hit.note.id)}
               />
             ))}
           </ul>
         )}
+
+        {renderBulkBar(result.hits.map((hit) => hit.note))}
       </div>
     );
   }
@@ -428,46 +491,7 @@ export function Stream({
         </>
       )}
 
-      {selectMode && (
-        <div className="bulk-bar">
-          <span className="bulk-count">已选 {selected.size} 条</span>
-
-          <div className="bulk-actions">
-            <button
-              type="button"
-              className="link"
-              onClick={() =>
-                setSelected(
-                  selected.size === streamed.length
-                    ? new Set()
-                    : new Set(streamed.map((note) => note.id)),
-                )
-              }
-            >
-              {selected.size === streamed.length && streamed.length > 0 ? '取消全选' : '全选'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={selected.size === 0}
-              onClick={() => void bulkArchive()}
-            >
-              归档
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm link-danger"
-              disabled={selected.size === 0}
-              onClick={() => void bulkDelete()}
-            >
-              删除
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={exitSelect}>
-              完成
-            </button>
-          </div>
-        </div>
-      )}
+      {renderBulkBar(streamed)}
     </div>
   );
 }
