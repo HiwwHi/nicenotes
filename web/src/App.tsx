@@ -143,6 +143,29 @@ export default function App() {
     void grade(app.currentId, value);
   }, [app.currentId]);
 
+  /**
+   * 应用快捷方式：长按桌面图标选「记一条」/「搜索」。
+   *
+   * 带参数进来后先把地址栏还原，否则刷新一次又自动开一遍编辑器。
+   * 等 ready 之后再执行 —— 初始化没完成就开弹窗，焦点会落到空地址上。
+   */
+  useEffect(() => {
+    if (!app.ready) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const wantsNew = params.get('new') === '1';
+    const wantsSearch = params.get('search') === '1';
+    if (!wantsNew && !wantsSearch) return;
+
+    params.delete('new');
+    params.delete('search');
+    const rest = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}`);
+
+    if (wantsNew) openCreate();
+    else focusSearch();
+  }, [app.ready, focusSearch, openCreate]);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (composer) return;

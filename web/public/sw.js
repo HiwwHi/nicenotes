@@ -11,7 +11,7 @@
  * 不改也不会出错：页面走网络优先，旧缓存只是占点空间。
  */
 
-const CACHE = 'nicenotes-v3';
+const CACHE = 'nicenotes-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-512-maskable.png'];
 
 self.addEventListener('install', (event) => {
