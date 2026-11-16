@@ -79,7 +79,9 @@ export interface SyncOutcome {
  */
 export function runSync(userId: string, since: number, incoming: SyncNote[]): SyncOutcome {
   const now = Date.now();
-  const batch = Array.isArray(incoming) ? incoming.slice(0, MAX_NOTES_PER_PUSH) : [];
+  const all = Array.isArray(incoming) ? incoming : [];
+  const batch = all.slice(0, MAX_NOTES_PER_PUSH);
+  const overflow = all.slice(MAX_NOTES_PER_PUSH);
   const conflicts: SyncConflict[] = [];
   const explicitWinners: Note[] = [];
   const rejected: { id: string; reason: string }[] = [];
@@ -143,6 +145,16 @@ export function runSync(userId: string, since: number, incoming: SyncNote[]): Sy
   }
   for (const note of explicitWinners) {
     merged.set(note.id, note);
+  }
+
+  /*
+   * 超出的部分不静默丢掉，逐条告诉他「这批没接收」。
+   * 现在的客户端会自己分批，走不到这里；这是给老版本和第三方客户端的兜底 ——
+   * 悄悄截断会让它们以为同步成功了，那些笔记却永远上不来。
+   */
+  for (const raw of overflow) {
+    const rawId = typeof raw?.id === 'string' ? raw.id : '';
+    rejected.push({ id: rawId.slice(0, 64) || '(空)', reason: `一次最多 ${MAX_NOTES_PER_PUSH} 条，这条没接收` });
   }
 
   return { since: cursor, notes: [...merged.values()], conflicts, rejected };

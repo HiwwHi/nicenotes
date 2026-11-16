@@ -173,6 +173,25 @@ try {
   });
   check('非法 id 出现在 rejected 里', (bad.body?.rejected ?? []).length === 1);
 
+  console.log('\n超量推送');
+  // 服务端单次上限 500。第 501 条要明说没接收，不能悄悄切掉 ——
+  // 悄悄切掉的话客户端以为同步成功了，那条笔记永远上不来。
+  const flood = Array.from({ length: 501 }, (_, i) => ({
+    ...noteA,
+    id: `flood-${String(i).padStart(5, '0')}`,
+    body: `洪水第 ${i} 条`,
+    updatedAt: Date.now() + i,
+    baseUpdatedAt: 0,
+  }));
+  const overflow = await api('/api/sync', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ since: cursor, notes: flood }),
+  });
+  const rejectedIds = (overflow.body?.rejected ?? []).map((item) => item.id);
+  check('超出的那条进 rejected', rejectedIds.includes('flood-00500'));
+  check('前 500 条被收下', !rejectedIds.includes('flood-00000'));
+
   console.log('\n冲突');
   const latest = pull.body.notes.find((n) => n.id === noteA.id);
   const first = await api('/api/sync', {
