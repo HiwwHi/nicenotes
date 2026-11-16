@@ -9,6 +9,9 @@ import type { Account, Grade, StoredNote } from './types';
 
 const TOKEN_KEY = 'nicenotes.token';
 const NEW_PER_DAY = 3;
+
+/** 单次推送的条数。服务端上限 500，留点余量 */
+const PUSH_BATCH = 400;
 const DAY = 86_400_000;
 
 /**
@@ -682,26 +685,54 @@ export async function syncNow(silent = false): Promise<number | null> {
 
   set({ syncing: true, syncError: silent ? state.syncError : null });
   try {
-    const dirty = state.notes.filter((note) => note.origin !== 'demo' && note.updatedAt !== note.baseUpdatedAt);
-    const since = (await local.readMeta<number>('cursor')) ?? 0;
-    const result = await api.sync(token, { since, notes: dirty });
-
     const byId = new Map(state.notes.map((note) => [note.id, note]));
     const touched: StoredNote[] = [];
+    let cursor = (await local.readMeta<number>('cursor')) ?? 0;
+    let pulled = 0;
+    let lost = 0;
+    let dropped = 0;
 
-    for (const remote of result.notes) {
-      const current = byId.get(remote.id);
-      if (!current || remote.updatedAt >= current.updatedAt) {
-        const merged: StoredNote = { ...remote, baseUpdatedAt: remote.updatedAt };
-        byId.set(remote.id, merged);
-        touched.push(merged);
+    /*
+     * 分批推。
+     *
+     * 服务端一次最多收 500 条，多的直接切掉、也不报错。客户端原来把所有未
+     * 同步的笔记一次推上去 —— 导入几百条之后第一次登录正好踩中：第 501 条
+     * 起永远排不上，那条笔记就一直堵在本机。
+     *
+     * 每批 400 条留点余量，推完看还剩多少。一轮下来数量没减少就停 ——
+     * 被服务端拒绝的笔记会一直留在待推列表里，不设这个判断会转成死循环。
+     */
+    const isDirty = (note: StoredNote) =>
+      note.origin !== 'demo' && note.updatedAt !== note.baseUpdatedAt;
+    let remaining = Number.POSITIVE_INFINITY;
+
+    for (let round = 0; round < 100; round += 1) {
+      const pending = [...byId.values()].filter(isDirty);
+      if (pending.length >= remaining) break;
+      remaining = pending.length;
+
+      const result = await api.sync(token, { since: cursor, notes: pending.slice(0, PUSH_BATCH) });
+      cursor = result.since;
+      pulled += result.notes.length;
+      lost += result.conflicts.filter((item) => item.winner === 'remote').length;
+      dropped += result.rejected?.length ?? 0;
+
+      for (const remote of result.notes) {
+        const current = byId.get(remote.id);
+        if (!current || remote.updatedAt >= current.updatedAt) {
+          const merged: StoredNote = { ...remote, baseUpdatedAt: remote.updatedAt };
+          byId.set(remote.id, merged);
+          touched.push(merged);
+        }
       }
+
+      if (pending.length <= PUSH_BATCH) break;
     }
 
     const notes = [...byId.values()];
     state = { ...state, notes };
     await local.putNotes(touched);
-    await local.writeMeta('cursor', result.since);
+    await local.writeMeta('cursor', cursor);
     await local.writeMeta('lastSyncAt', Date.now());
 
     const now = Date.now();
@@ -717,18 +748,15 @@ export async function syncNow(silent = false): Promise<number | null> {
     // 当前卡片可能被远端覆盖了，重算一下
     if (state.currentId && !byId.has(state.currentId)) advance();
 
-    const lost = result.conflicts.filter((item) => item.winner === 'remote').length;
-    const dropped = result.rejected?.length ?? 0;
-
     if (dropped > 0) {
       // 被拒的笔记留在本机，只是上不去。得说出来，不然用户以为同步好了
       toast(`${dropped} 条笔记没同步上去（服务端不认这个格式），本机数据还在`, 'warn');
     } else if (lost > 0) {
       toast(`${lost} 条笔记在另一台设备上改过，旧内容已存进历史`, 'warn');
     } else if (!silent) {
-      toast(result.notes.length > 0 ? `已同步，拿回 ${result.notes.length} 条` : '已是最新');
+      toast(pulled > 0 ? `已同步，拿回 ${pulled} 条` : '已是最新');
     }
-    return result.notes.length;
+    return pulled;
   } catch (error) {
     const message = error instanceof Error ? error.message : '同步失败';
     set({ syncing: false, syncError: message });
