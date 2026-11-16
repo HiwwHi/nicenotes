@@ -96,10 +96,41 @@ export default function App() {
   const review = current ? { note: current, kind: isNew(current) ? ('new' as const) : ('due' as const) } : null;
   const nextAt = nextSoonest();
 
-  const openCreate = useCallback(() => setComposer({ mode: 'create', initial: '' }), []);
+  /**
+   * 弹窗关掉之后把焦点还给当初触发它的那个元素。
+   *
+   * 不还的话焦点落回 body，接着按 Tab 要从页面最开头重新找 —— 用键盘的人
+   * 会丢掉位置。跳过去之前先记一下，回来才认得路。
+   */
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  const openEdit = useCallback((noteId: string, body: string) => {
-    setComposer({ mode: 'edit', noteId, initial: body });
+  const rememberFocus = useCallback(() => {
+    const active = document.activeElement;
+    returnFocusRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
+  }, []);
+
+  const openCreate = useCallback(() => {
+    rememberFocus();
+    setComposer({ mode: 'create', initial: '' });
+  }, [rememberFocus]);
+
+  const openEdit = useCallback(
+    (noteId: string, body: string) => {
+      rememberFocus();
+      setComposer({ mode: 'edit', noteId, initial: body });
+    },
+    [rememberFocus],
+  );
+
+  const closeComposer = useCallback(() => {
+    setComposer(null);
+    const back = returnFocusRef.current;
+    returnFocusRef.current = null;
+    // 等 React 把弹窗摘下来再聚焦，否则焦点会被卸载中的节点吃掉
+    if (!back) return;
+    requestAnimationFrame(() => {
+      if (document.contains(back)) back.focus();
+    });
   }, []);
 
   const focusSearch = useCallback(() => {
@@ -335,7 +366,7 @@ export default function App() {
           mode={composer.mode}
           initial={composer.initial}
           noteId={composer.noteId}
-          onClose={() => setComposer(null)}
+          onClose={closeComposer}
           onSubmit={async (text) => {
             if (composer.mode === 'create') {
               const ok = await addNote(text);
