@@ -78,12 +78,67 @@ const DTS: Rule[] = [
   ),
 ];
 
+/**
+ * Makefile。
+ *
+ * 变量比别的语言多：$(CC)、${CFLAGS}、还有 $@ $< $^ 这些自动变量 ——
+ * 一眼看出哪段被替换过，比看纯文本快得多。
+ *
+ * 指令（include / ifeq / .PHONY）不做行首锚定：JS 的后行断言在旧 Safari 上
+ * 会直接 SyntaxError，整个模块都加载不了，不值得为一个高亮冒这个险。
+ */
+const MAKE: Rule[] = [
+  rule('comment', String.raw`#[^\n]*`),
+  rule('variable', String.raw`\$\([^)\n]*\)`),
+  rule('variable', String.raw`\$\{[^}\n]*\}`),
+  rule('variable', String.raw`\$[@<^?*%+]`),
+  rule('string', String.raw`"(?:[^"\\\n]|\\.)*"`),
+  rule(
+    'meta',
+    String.raw`\b(?:include|-include|ifeq|ifneq|ifdef|ifndef|else|endif|export|override|define|endef|vpath|PHONY|SUFFIXES|DEFAULT)\b`,
+  ),
+  rule('number', String.raw`\b\d+\b`),
+];
+
+const PYTHON: Rule[] = [
+  rule('comment', String.raw`#[^\n]*`),
+  // 三引号在前：它得先吃掉整段，里面那些引号才不会被拆成一个个字符串
+  rule('string', String.raw`"""[\s\S]*?"""`),
+  rule('string', String.raw`'''[\s\S]*?'''`),
+  rule('string', String.raw`"(?:[^"\\\n]|\\.)*"`),
+  rule('string', String.raw`'(?:[^'\\\n]|\\.)*'`),
+  rule('number', String.raw`\b0[xX][0-9a-fA-F]+\b`),
+  rule('number', String.raw`\b\d+(?:\.\d+)?\b`),
+  rule(
+    'keyword',
+    String.raw`\b(?:def|class|lambda|import|from|as|if|elif|else|for|while|break|continue|pass|return|yield|try|except|finally|raise|with|assert|del|global|nonlocal|and|or|not|in|is|None|True|False|self)\b`,
+  ),
+];
+
+/**
+ * JSON / JSON5。
+ *
+ * 键单独标出来：配置文件的层级全靠它们，数值和字符串反而好认。
+ */
+const JSON_RULES: Rule[] = [
+  rule('comment', String.raw`\/\/[^\n]*`),
+  rule('meta', String.raw`"(?:[^"\\\n]|\\.)*"(?=\s*:)`),
+  rule('string', String.raw`"(?:[^"\\\n]|\\.)*"`),
+  // 严格说 JSON 不支持十六进制，但配置文件里到处是 0x1c28000
+  rule('number', String.raw`-?\b0[xX][0-9a-fA-F]+\b`),
+  rule('number', String.raw`-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b`),
+  rule('keyword', String.raw`\b(?:true|false|null)\b`),
+];
+
 function rulesFor(rawLang: string): Rule[] {
   const lang = rawLang.trim().toLowerCase();
   if (!lang) return COMMON;
   if (/^(sh|bash|shell|zsh|console|shellsession|ksh)$/.test(lang)) return SHELL;
   if (/^(c|h|cpp|cc|cxx|objc|ino)$/.test(lang)) return C_LIKE;
   if (/^(dts|dtsi|dtso)$/.test(lang)) return DTS;
+  if (/^(make|makefile|mk|gnumake)$/.test(lang)) return MAKE;
+  if (/^(py|python|python3)$/.test(lang)) return PYTHON;
+  if (/^(json|jsonc|json5)$/.test(lang)) return JSON_RULES;
   return COMMON;
 }
 
