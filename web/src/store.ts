@@ -406,13 +406,29 @@ function normalizeBody(raw: string): string {
   return raw.replace(/\r\n?/g, '\n').trim();
 }
 
+/**
+ * 正文上限。服务端校验用的是同一个数，超了也会被截断。
+ *
+ * 以前这里是静默 slice，粘 10 万字符的 log 进去、提示「记下了」，
+ * 实际只存了五分之一 —— 用户永远不知道自己丢了东西。
+ */
+export const MAX_BODY = 20_000;
+
+/** 按上限截断。别把一个 emoji 切成半个 —— 它在 UTF-16 里占两个单元 */
+function clipBody(text: string): string {
+  if (text.length <= MAX_BODY) return text;
+  const last = text.charCodeAt(MAX_BODY - 1);
+  return text.slice(0, last >= 0xd800 && last <= 0xdbff ? MAX_BODY - 1 : MAX_BODY);
+}
+
 export async function addNote(body: string): Promise<boolean> {
   const text = normalizeBody(body);
   if (!text) return false;
   const now = Date.now();
+  const tooLong = text.length > MAX_BODY;
   const note: StoredNote = {
     id: newId(),
-    body: text.slice(0, 20_000),
+    body: clipBody(text),
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -421,7 +437,11 @@ export async function addNote(body: string): Promise<boolean> {
     baseUpdatedAt: 0,
   };
   await store(note);
-  toast('记下了。它会在合适的时候回来找你');
+  if (tooLong) {
+    toast(`这条太长，只存了前 2 万字符。剩下的建议拆成另一条`, 'warn');
+  } else {
+    toast('记下了。它会在合适的时候回来找你');
+  }
   scheduleSync();
   return true;
 }
@@ -430,8 +450,9 @@ export async function editNote(id: string, body: string): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
   const text = normalizeBody(body);
   if (!note || !text || text === note.body) return;
-  await store({ ...note, body: text.slice(0, 20_000), updatedAt: Date.now() });
-  toast('改好了');
+  const tooLong = text.length > MAX_BODY;
+  await store({ ...note, body: clipBody(text), updatedAt: Date.now() });
+  toast(tooLong ? '改完还是超过 2 万字符，只存了前面那段' : '改好了', tooLong ? 'warn' : 'ok');
   scheduleSync();
 }
 
@@ -820,7 +841,7 @@ export async function importJson(raw: string): Promise<number> {
     const updatedAt = Number(item.updatedAt ?? now);
     const note: StoredNote = {
       id,
-      body: normalizeBody(String(item.body)).slice(0, 20_000),
+      body: clipBody(normalizeBody(String(item.body))),
       createdAt: Number(item.createdAt ?? updatedAt),
       updatedAt,
       deletedAt: item.deletedAt ?? null,
@@ -862,7 +883,7 @@ export async function importMarkdownFiles(
 
   for (const file of files) {
     for (const parsed of parseMarkdownFile(file.name, file.text)) {
-      const body = normalizeBody(toBody(parsed)).slice(0, 20_000);
+      const body = clipBody(normalizeBody(toBody(parsed)));
       if (!body) continue;
 
       const hash = contentHash(body);
