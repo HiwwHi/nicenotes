@@ -109,9 +109,14 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
         }
 
         if (segment.kind === 'list') {
+          /*
+           * 列表项和表格单元格里也要认行内代码和网址 —— 之前这里用的纯文本
+           * 渲染，`i2cdetect -y 1` 会连反引号一起显示出来。
+           * 递归回 Rich 是安全的：单行内容不会又解析出列表或表格。
+           */
           const items = segment.items.map((item, i) => (
             <li key={i}>
-              <Marked text={item} marks={marks} />
+              <Rich text={item} marks={marks} />
             </li>
           ));
 
@@ -134,7 +139,7 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
                   <tr>
                     {segment.header.map((cell, i) => (
                       <th key={i}>
-                        <Marked text={cell} marks={marks} />
+                        <Rich text={cell} marks={marks} />
                       </th>
                     ))}
                   </tr>
@@ -144,7 +149,7 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
                     <tr key={rowIndex}>
                       {row.map((cell, cellIndex) => (
                         <td key={cellIndex}>
-                          <Marked text={cell} marks={marks} />
+                          <Rich text={cell} marks={marks} />
                         </td>
                       ))}
                     </tr>
