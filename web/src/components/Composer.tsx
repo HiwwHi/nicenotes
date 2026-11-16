@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { timeLabel } from '../lib/date';
-import { authToken, MAX_BODY } from '../store';
+import { timeLabelPrecise } from '../lib/date';
+import { authToken, MAX_BODY, toast } from '../store';
 import type { HistoryVersion } from '../types';
 import { CloseIcon } from './Icons';
 import { Rich } from './Rich';
@@ -260,7 +260,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             {versions.length === 0 && <p className="history-empty">还没有旧版本。改过一次被覆盖后才会出现。</p>}
             {versions.map((version) => (
               <div className="history-row" key={`${version.replacedAt}-${version.savedAt}`}>
-                <div className="history-meta">{timeLabel(version.replacedAt)}</div>
+                <div className="history-meta">{timeLabelPrecise(version.replacedAt)}</div>
                 <p className="history-body">{version.body}</p>
                 <button
                   type="button"
@@ -268,6 +268,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
                   onClick={() => {
                     setText(version.body);
                     setVersions(null);
+                    // 只是填回输入框，还没落盘。不说一句的话，用户以为已经恢复了，
+                    // 关掉弹窗才发现什么都没变。
+                    toast('已填回输入框，记得按保存', 'warn');
                   }}
                 >
                   恢复这一版

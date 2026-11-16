@@ -55,6 +55,12 @@ export function timeLabel(ts: number): string {
   return `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** 精确到秒。历史版本要分清「先改的」和「后改的」，同一分钟里两次编辑很常见 */
+export function timeLabelPrecise(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 /** 把正文拆成「第一行当标题，其余当内容」 */
 export function splitBody(body: string): { title: string; rest: string } {
   const trimmed = body.replace(/\r\n/g, '\n').trim();
