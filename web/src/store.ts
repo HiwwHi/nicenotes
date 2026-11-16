@@ -396,8 +396,18 @@ export async function init(): Promise<void> {
 
 /* ---------------------------------------------------------------- 写操作 */
 
+/**
+ * 统一换行、去掉首尾空白。
+ *
+ * Windows 剪贴板过来的是 \r\n，直接存下去的话代码块每行尾巴都挂着一个
+ * 看不见的 \r：显示上没问题，但内容去重、内链标题精确匹配都会对不上。
+ */
+function normalizeBody(raw: string): string {
+  return raw.replace(/\r\n?/g, '\n').trim();
+}
+
 export async function addNote(body: string): Promise<boolean> {
-  const text = body.trim();
+  const text = normalizeBody(body);
   if (!text) return false;
   const now = Date.now();
   const note: StoredNote = {
@@ -418,7 +428,7 @@ export async function addNote(body: string): Promise<boolean> {
 
 export async function editNote(id: string, body: string): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
-  const text = body.trim();
+  const text = normalizeBody(body);
   if (!note || !text || text === note.body) return;
   await store({ ...note, body: text.slice(0, 20_000), updatedAt: Date.now() });
   toast('改好了');
@@ -810,7 +820,7 @@ export async function importJson(raw: string): Promise<number> {
     const updatedAt = Number(item.updatedAt ?? now);
     const note: StoredNote = {
       id,
-      body: String(item.body).slice(0, 20_000),
+      body: normalizeBody(String(item.body)).slice(0, 20_000),
       createdAt: Number(item.createdAt ?? updatedAt),
       updatedAt,
       deletedAt: item.deletedAt ?? null,
@@ -852,7 +862,7 @@ export async function importMarkdownFiles(
 
   for (const file of files) {
     for (const parsed of parseMarkdownFile(file.name, file.text)) {
-      const body = toBody(parsed).slice(0, 20_000).trim();
+      const body = normalizeBody(toBody(parsed)).slice(0, 20_000);
       if (!body) continue;
 
       const hash = contentHash(body);
