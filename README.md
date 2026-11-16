@@ -56,11 +56,11 @@ Anything wrapped in backticks renders as a monospaced fragment, and three backti
 
 Return codes, register addresses and command names stand out from the sentence. A dmesg excerpt keeps its original indentation instead of melting into wrapped text.
 
-**It supports structure, not emphasis.** Code blocks, inline code, tables, lists and `[[links]]` are all recognised; italics, bold and headings are not — the `*` and `_` you type casually would turn into styling, and what a note actually needs is structure.
+**It supports structure, not emphasis.** Code blocks, inline code, tables, lists, `[[links]]` and bare URLs are all recognised; italics, bold and headings are not — the `*` and `_` you type casually would turn into styling, and what a note actually needs is structure.
 
 A line starting with `- ` or `1. ` becomes a list; `| header |` plus a `|---|---|` row becomes a table. Nothing inside a fence is parsed, so the dash in `dmesg -w` never turns a command into a list.
 
-Code blocks are syntax-coloured for `sh` / `bash`, `c` / `h` and `dts` / `dtsi`. No highlighter library — a full one is a few hundred KB, while code notes really only need comments, strings, numbers and keywords to be distinguishable. The whole thing adds 3KB.
+Code blocks are syntax-coloured for `sh` / `bash`, `c` / `h`, `dts` / `dtsi`, `make` / `Makefile`, `py` / `python` and `json`. No highlighter library — a full one is a few hundred KB, while code notes really only need comments, strings, numbers and keywords to be distinguishable. The whole thing adds a few KB.
 
 ![Code block](docs/shot-code-block.png)
 
