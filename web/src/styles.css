@@ -1619,6 +1619,13 @@ mark.hit {
   background: rgba(28, 24, 16, 0.34);
   backdrop-filter: blur(2px);
   animation: fade 0.16s ease-out;
+  /*
+   * 弹窗自己承接滚动。否则滚轮 / 手指滑动会穿透到 body，把后面的列表
+   * 一起滚走 —— 手机上尤其明显：弹窗还在，底下的内容在动。
+   * overscroll-behavior 断掉链式滚动，滚到底不会带出父级。
+   */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes fade {
