@@ -164,6 +164,19 @@ mark.hit {
 }
 
 /* 指向另一条笔记的 [[链接]] */
+/* 正文里写着的网址。实线下划线，和虚线的 [[内链]] 区分开 */
+.md-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-line);
+  word-break: break-all;
+  transition: border-bottom-color 0.15s, color 0.15s;
+}
+
+.md-link:hover {
+  border-bottom-color: var(--accent);
+}
+
 .wikilink {
   display: inline;
   border: none;

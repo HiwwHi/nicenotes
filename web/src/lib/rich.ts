@@ -12,6 +12,8 @@ export type Segment =
   | { kind: 'block'; text: string; lang: string }
   /** [[另一条笔记的标题]] */
   | { kind: 'wiki'; text: string }
+  /** https://… 显式写了协议头的链接 */
+  | { kind: 'link'; text: string }
   /** | 表头 | 表头 | 加一行 |---|---| */
   | { kind: 'table'; header: string[]; rows: string[][] }
   /** - 一条 或者 1. 一条 */
@@ -21,6 +23,14 @@ const FENCE_OPEN = /^```([\w+#.-]*)\s*$/;
 const FENCE_CLOSE = /^```\s*$/;
 const INLINE = /`([^`\n]+)`|\[\[([^[\]\n]+)\]\]/g;
 const WIKI = /\[\[([^[\]\n]+)\]\]/g;
+
+/*
+ * 只认显式写了 http(s):// 的地址，不猜裸域名。
+ * 笔记里 www 开头和 a.b.c 这种更像文件名或版本号，猜错比不猜更烦。
+ */
+const URL_PATTERN = /https?:\/\/[^\s<>"'`）】，。]+/g;
+/** 句末标点不该被吃进链接里 */
+const URL_TRAILING = /[.,;:!?、)\]}>]+$/;
 
 /** 表格分隔行：|---|---| 或者带对齐的 |:--|--:| */
 function isTableDivider(line: string): boolean {
@@ -40,6 +50,34 @@ function splitRow(line: string): string[] {
     .map((cell) => cell.trim());
 }
 
+/**
+ * 把一段普通文字里写着的 http(s) 地址挑出来。
+ *
+ * 只在「纯文字」片段上跑：行内代码和围栏里的内容不该变成可点链接 ——
+ * 那里面出现 URL 是命令参数，不是让你点的。
+ */
+function splitUrl(text: string): Segment[] {
+  const parts: Segment[] = [];
+  URL_PATTERN.lastIndex = 0;
+
+  let cursor = 0;
+  let found: RegExpExecArray | null;
+  while ((found = URL_PATTERN.exec(text)) !== null) {
+    const tail = found[0].match(URL_TRAILING)?.[0] ?? '';
+    const url = tail ? found[0].slice(0, -tail.length) : found[0];
+
+    // 只剩个协议头（http://）就别当链接了
+    if (url.length <= 'https://'.length) continue;
+
+    if (found.index > cursor) parts.push({ kind: 'text', text: text.slice(cursor, found.index) });
+    parts.push({ kind: 'link', text: url });
+    cursor = found.index + url.length;
+  }
+
+  if (cursor < text.length) parts.push({ kind: 'text', text: text.slice(cursor) });
+  return parts.length > 0 ? parts : [{ kind: 'text', text }];
+}
+
 function splitInline(text: string): Segment[] {
   const parts: Segment[] = [];
   INLINE.lastIndex = 0;
@@ -47,7 +85,7 @@ function splitInline(text: string): Segment[] {
   let cursor = 0;
   let found: RegExpExecArray | null;
   while ((found = INLINE.exec(text)) !== null) {
-    if (found.index > cursor) parts.push({ kind: 'text', text: text.slice(cursor, found.index) });
+    if (found.index > cursor) parts.push(...splitUrl(text.slice(cursor, found.index)));
 
     if (found[1] !== undefined) {
       parts.push({ kind: 'inline', text: found[1] });
@@ -60,7 +98,7 @@ function splitInline(text: string): Segment[] {
 
     cursor = found.index + found[0].length;
   }
-  if (cursor < text.length) parts.push({ kind: 'text', text: text.slice(cursor) });
+  if (cursor < text.length) parts.push(...splitUrl(text.slice(cursor)));
 
   return parts.length > 0 ? parts : [{ kind: 'text', text }];
 }

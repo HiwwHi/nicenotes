@@ -85,6 +85,21 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
           );
         }
 
+        if (segment.kind === 'link') {
+          return (
+            <a
+              key={index}
+              className="md-link"
+              href={segment.text}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={segment.text}
+            >
+              <Marked text={segment.text} marks={marks} />
+            </a>
+          );
+        }
+
         if (segment.kind === 'inline') {
           return (
             <code key={index} className="icode">
