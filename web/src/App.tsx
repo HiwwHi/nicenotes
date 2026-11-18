@@ -33,7 +33,16 @@ interface ComposerState {
 export default function App() {
   const app = useApp();
   const [view, setView] = useState<View>('stream');
+  /** 输入框里显示的内容。中文输入法拼写期间也要实时更新，否则看不到自己打的字 */
   const [query, setQuery] = useState('');
+  /**
+   * 真正拿去搜的词。
+   *
+   * 和 query 分开：输入法还在拼的时候 query 是「wanggu」，这时候按它搜会先
+   * 按拼音缩跑去匹配一轮，选完词再跳一次 —— 结果闪两下，第一轮还可能是错的。
+   * 组合期间不动它，列表就停在上一轮结果上。
+   */
+  const [searchTerm, setSearchTerm] = useState('');
   const [theme, setTheme] = useState<Theme>(() => readTheme());
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -44,12 +53,12 @@ export default function App() {
 
   // 停手一秒半才记进历史：打到一半的词不该出现在「最近搜过」里
   useEffect(() => {
-    if (!query.trim()) return;
+    if (!searchTerm.trim()) return;
     const timer = window.setTimeout(() => {
-      setSearches((current) => rememberSearch(current, query));
+      setSearches((current) => rememberSearch(current, searchTerm));
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [searchTerm]);
 
   // 点别处收起历史
   useEffect(() => {
@@ -180,6 +189,7 @@ export default function App() {
         }
         if (query) {
           setQuery('');
+          setSearchTerm('');
           searchRef.current?.blur();
           return;
         }
@@ -259,7 +269,14 @@ export default function App() {
                 className="searchbar-input"
                 value={query}
                 onChange={(event) => {
-                  setQuery(event.target.value);
+                  const next = event.target.value;
+                  setQuery(next);
+                  setHistoryOpen(false);
+                  // 组合期间只更新显示，不拿去搜
+                  if (!(event.nativeEvent as InputEvent).isComposing) setSearchTerm(next);
+                }}
+                onCompositionEnd={(event) => {
+                  setSearchTerm(event.currentTarget.value);
                   setHistoryOpen(false);
                 }}
                 onFocus={() => {
@@ -387,7 +404,7 @@ export default function App() {
             review={review}
             revealed={app.revealed}
             reviewedToday={app.log[todayKey] ?? 0}
-            query={query}
+            query={searchTerm}
             nextAt={nextAt}
             onReveal={reveal}
             onGrade={onGrade}
