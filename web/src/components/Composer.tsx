@@ -107,6 +107,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // 输入法正在拼：这一下 Esc 是「取消这次输入」，不是「关掉编辑器」
+      if (event.isComposing) return;
+
       if (event.key === 'Escape') {
         event.stopPropagation();
         onClose();

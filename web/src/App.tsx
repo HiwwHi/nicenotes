@@ -178,6 +178,8 @@ export default function App() {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (composer) return;
+      // 输入法组合期间的按键属于输入法，别拿来做快捷键
+      if (event.isComposing) return;
       const target = event.target as HTMLElement | null;
       const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
       if (event.metaKey || event.ctrlKey || event.altKey) return;
