@@ -2287,3 +2287,24 @@ mark.hit {
     white-space: normal;
   }
 }
+
+/*
+ * 打印单条：展开了某一条笔记时，只打这一条。
+ *
+ * 之前不管展开与否都打整页 —— 想打印一条贴到工位上，结果吐出十几页。
+ * 什么都没展开时仍然打全部，那是「打印整个笔记本」的意图。
+ */
+@media print {
+  body:has(.item.is-open) .item:not(.is-open) {
+    display: none !important;
+  }
+
+  body:has(.item.is-open) .card {
+    display: none !important;
+  }
+
+  body:has(.item.is-open) .stream-bar,
+  body:has(.item.is-open) .intro {
+    display: none !important;
+  }
+}
