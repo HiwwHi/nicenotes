@@ -583,8 +583,13 @@ export async function grade(id: string, value: Grade): Promise<void> {
   await store(graded);
 
   const today = dayKey(now);
+  /*
+   * 跨过午夜还开着页面的时候，昨天看过几条不能算到今天头上 ——
+   * 不判断的话，昨天满额的 3 条会让今天一条新笔记都不给。
+   */
+  const baseNew = state.newDay === today ? state.newToday : 0;
   const log = { ...state.log, [today]: (state.log[today] ?? 0) + 1 };
-  const newToday = wasNew ? state.newToday + 1 : state.newToday;
+  const newToday = wasNew ? baseNew + 1 : baseNew;
 
   const sessionDone = state.sessionDone.includes(id) ? state.sessionDone : [...state.sessionDone, id];
   set({ log, newDay: today, newToday, sessionDone });
