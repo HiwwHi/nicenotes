@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { timeLabelPrecise } from '../lib/date';
-import { authToken, MAX_BODY, toast } from '../store';
+import { authToken, MAX_BODY, toast, useApp } from '../store';
 import type { HistoryVersion } from '../types';
 import { CloseIcon } from './Icons';
 import { Rich } from './Rich';
@@ -37,6 +37,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
       return false;
     }
   });
+  const { account } = useApp();
   const [busy, setBusy] = useState(false);
   /** 写代码块的时候，得能先看一眼渲染成什么样再存 */
   const [tab, setTab] = useState<'write' | 'preview'>('write');
@@ -238,7 +239,11 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             )}
           </div>
           <div className="sheet-actions">
-            {mode === 'edit' && noteId ? (
+            {/*
+             * 没登录就没有云端历史。之前按钮照常显示，点了才告诉你「登录后才有」，
+             * 等于让人白点一下 —— 干脆不出现。
+             */}
+            {mode === 'edit' && noteId && account ? (
               <button type="button" className="btn btn-ghost" onClick={() => void loadHistory()}>
                 历史版本
               </button>
