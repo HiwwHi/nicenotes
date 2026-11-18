@@ -458,14 +458,33 @@ export async function addNote(body: string): Promise<boolean> {
   return true;
 }
 
-export async function editNote(id: string, body: string): Promise<void> {
+/**
+ * 改一条已有的笔记。
+ *
+ * 返回 false 表示没存进去，调用方别急着关弹窗 —— 否则用户写了半天的东西
+ * 连个提示都没有就没了。最典型的情况：这条在另一台设备上被删了。
+ */
+export async function editNote(id: string, body: string): Promise<boolean> {
   const note = state.notes.find((item) => item.id === id);
   const text = normalizeBody(body);
-  if (!note || !text || text === note.body) return;
+
+  if (!note) {
+    toast('这条已经不在了（可能在别的设备上删掉了），内容还在输入框里', 'error');
+    return false;
+  }
+  // 删除是软删除，笔记还在数组里。不管它的话，保存下去的东西永远看不见 ——
+  // 用户只会觉得「改了没反应」。
+  if (note.deletedAt) {
+    toast('这条已经在别处删掉了，改的内容没有保存', 'error');
+    return false;
+  }
+  if (!text || text === note.body) return true;
+
   const tooLong = text.length > MAX_BODY;
   await store({ ...note, body: clipBody(text), updatedAt: Date.now() });
   toast(tooLong ? '改完还是超过 2 万字符，只存了前面那段' : '改好了', tooLong ? 'warn' : 'ok');
   scheduleSync();
+  return true;
 }
 
 export async function removeNote(id: string): Promise<void> {

@@ -419,7 +419,8 @@ export default function App() {
               }
               return ok;
             }
-            if (composer.noteId) await editNote(composer.noteId, text);
+            // 改失败（比如这条在别处被删了）就别关弹窗，内容还在里面
+            if (composer.noteId) return await editNote(composer.noteId, text);
             return true;
           }}
         />
