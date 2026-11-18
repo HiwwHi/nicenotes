@@ -219,6 +219,31 @@ try {
   const history = await api(`/api/notes/${noteA.id}/history`, { headers: auth });
   check('落败版本进了历史', (history.body?.versions ?? []).some((v) => v.body.includes('客户端 A')));
 
+  console.log('\n脏数据');
+  // lastReviewedAt 原本是 memory 里唯一没过 clamp 的字段：传字符串会变成 NaN，
+  // 前端拿它算「上次复习是多久前」直接算出垃圾。
+  const dirty = await api('/api/sync', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      since: cursor,
+      notes: [
+        {
+          ...noteA,
+          id: 'dirty-0001',
+          body: '脏数据测试',
+          updatedAt: Date.now() + 1,
+          baseUpdatedAt: 0,
+          memory: { ...noteA.memory, lastReviewedAt: 'abc', due: 'xyz', ease: null },
+        },
+      ],
+    }),
+  });
+  const dirtyNote = (dirty.body?.notes ?? []).find((n) => n.id === 'dirty-0001');
+  check('非数字的 lastReviewedAt 落成 null', dirtyNote ? dirtyNote.memory.lastReviewedAt === null : false);
+  check('非数字的 due 兜底成 number', dirtyNote ? typeof dirtyNote.memory.due === 'number' && Number.isFinite(dirtyNote.memory.due) : false);
+  check('ease 缺失时用默认值', dirtyNote ? dirtyNote.memory.ease === 2.5 : false);
+
   console.log('\n历史版本上限');
   // 连续制造 25 次冲突：旧的正文每次都会被写进 note_history，
   // 但库里只该留最近 20 条 —— 只插不删的话这张表会一直长。

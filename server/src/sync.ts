@@ -37,7 +37,13 @@ function normalizeMemory(raw: unknown, now: number): Memory {
     ease: clamp(Number(source.ease ?? 2.5), 1.3, 3.2),
     reps: clamp(Number(source.reps ?? 0), 0, 100_000),
     lapses: clamp(Number(source.lapses ?? 0), 0, 100_000),
-    lastReviewedAt: source.lastReviewedAt == null ? null : Number(source.lastReviewedAt),
+    // 这里也得过一遍校验：它是 memory 里唯一没走 clamp 的字段，
+    // 传个非数字进来会变成 NaN，前端拿它算「上次复习是多久前」就废了。
+    // 脏值按「还没复习过」处理，比兜底成 1970 年更说得通。
+    lastReviewedAt:
+      source.lastReviewedAt != null && Number.isFinite(Number(source.lastReviewedAt))
+        ? clamp(Number(source.lastReviewedAt), 0, Number.MAX_SAFE_INTEGER)
+        : null,
     lastGrade: grade === 0 || grade === 1 || grade === 2 ? grade : null,
   };
 }
