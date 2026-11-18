@@ -597,7 +597,7 @@ export async function grade(id: string, value: Grade): Promise<void> {
   const now = Date.now();
   const wasNew = isNew(note);
   // 手滑点到「忘记了」会把间隔直接打回原点，得留一条退路
-  const before = { memory: note.memory, reviewCount: note.reviewCount };
+  const before = { memory: note.memory, reviewCount: note.reviewCount, updatedAt: note.updatedAt };
   const graded: StoredNote = { ...applyGrade(note, value, now), baseUpdatedAt: note.baseUpdatedAt };
   await store(graded);
 
@@ -623,27 +623,37 @@ export async function grade(id: string, value: Grade): Promise<void> {
 
   toast(GRADE_META.find((item) => item.grade === value)?.label ?? '记下了', 'ok', {
     label: '撤销',
-    run: () => void undoGrade(id, before.memory, before.reviewCount, log, wasNew),
+    run: () => void undoGrade(id, before, log, wasNew),
   });
 }
 
 /** 把上一次评分退回去 */
 async function undoGrade(
   id: string,
-  memory: StoredNote['memory'],
-  reviewCount: number,
+  before: { memory: StoredNote['memory']; reviewCount: number; updatedAt: number },
   log: Record<string, number>,
   wasNew: boolean,
 ): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
-  if (!note) return;
+  if (!note) {
+    toast('这条已经不在了，撤销不了', 'warn');
+    return;
+  }
 
-  await store({ ...note, memory, reviewCount, updatedAt: Date.now() });
+  /*
+   * updatedAt 也退回评分前的值。
+   *
+   * 不退回的话，撤销会留下一个「内容没变、时间更新」的版本：同步要多推一次，
+   * 另一台设备也会当成一次新的改动。
+   */
+  await store({ ...note, memory: before.memory, reviewCount: before.reviewCount, updatedAt: before.updatedAt });
 
   // 今天的计数和「本轮已看过」也一起退回去，否则撤销完却少算一次
   const today = dayKey(Date.now());
   const reverted = { ...log };
-  if ((reverted[today] ?? 0) > 0) reverted[today] = (reverted[today] ?? 0) - 1;
+  // 减到 0 就把这个键去掉，别在记录里留一串值为 0 的日期
+  const left = (reverted[today] ?? 0) - 1;
+  if (left > 0) reverted[today] = left;
   else delete reverted[today];
 
   const newToday = wasNew ? Math.max(0, state.newToday - 1) : state.newToday;
