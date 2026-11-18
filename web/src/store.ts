@@ -440,6 +440,15 @@ export async function addNote(body: string): Promise<boolean> {
     baseUpdatedAt: 0,
   };
   await store(note);
+
+  /*
+   * 新建之后，如果当前没有正在复习的（比如刚把笔记清空过），把这条顶上来。
+   *
+   * 不补这一句的话首屏会停在「随手翻到」那张卡上 —— 它没有评分按钮，
+   * 这条新笔记就进不了复习流程，只能靠刷新页面才恢复。
+   */
+  if (!state.currentId) set({ currentId: note.id, revealed: false });
+
   if (tooLong) {
     toast(`这条太长，只存了前 2 万字符。剩下的建议拆成另一条`, 'warn');
   } else {
@@ -474,6 +483,7 @@ export async function restoreNote(id: string): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
   if (!note || !note.deletedAt) return;
   await store({ ...note, deletedAt: null, updatedAt: Date.now() });
+  if (!state.currentId) advance();
   toast('恢复了');
   scheduleSync();
 }
@@ -494,6 +504,7 @@ export async function unarchiveNote(id: string): Promise<void> {
   const note = state.notes.find((item) => item.id === id);
   if (!note || !note.archivedAt) return;
   await store({ ...note, archivedAt: null, updatedAt: Date.now() });
+  if (!state.currentId) advance();
   toast('恢复复习了');
   scheduleSync();
 }
@@ -547,6 +558,7 @@ export async function archiveNotes(ids: string[]): Promise<number> {
 export async function restoreNotes(ids: string[]): Promise<void> {
   const changed = await patchNotes(ids, { deletedAt: null });
   if (changed.length === 0) return;
+  if (!state.currentId) advance();
   toast(`恢复了 ${changed.length} 条`);
   scheduleSync();
 }
@@ -554,6 +566,7 @@ export async function restoreNotes(ids: string[]): Promise<void> {
 export async function unarchiveNotes(ids: string[]): Promise<void> {
   const changed = await patchNotes(ids, { archivedAt: null });
   if (changed.length === 0) return;
+  if (!state.currentId) advance();
   toast(`恢复了 ${changed.length} 条的复习`);
   scheduleSync();
 }
