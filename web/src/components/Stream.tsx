@@ -401,9 +401,24 @@ export function Stream({
               </>
             )}
           </span>
-          <button type="button" className="link" onClick={onClearQuery}>
-            清除
-          </button>
+          <div className="stream-tools">
+            {/*
+             * 搜出来的结果也要能批量处理。之前这个入口只在正常列表里有，
+             * 想删掉搜出来的几条，得先清空搜索、进多选、再搜回去。
+             */}
+            {count > 0 && (
+              <button
+                type="button"
+                className="stream-select"
+                onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              >
+                {selectMode ? '取消' : '选择'}
+              </button>
+            )}
+            <button type="button" className="link" onClick={onClearQuery}>
+              清除
+            </button>
+          </div>
         </div>
 
         {count === 0 ? (
