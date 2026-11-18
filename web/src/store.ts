@@ -851,10 +851,40 @@ async function promoteDemoNotes(): Promise<void> {
   await local.putNotes(promoted);
 }
 
+const LAST_EMAIL_KEY = 'nicenotes.lastEmail';
+
+/** 这台设备上次登录的是谁。换账号时用来判断要不要提醒 */
+function readLastEmail(): string | null {
+  try {
+    return localStorage.getItem(LAST_EMAIL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeLastEmail(email: string): void {
+  try {
+    localStorage.setItem(LAST_EMAIL_KEY, email.toLowerCase());
+  } catch {
+    /* 无痕模式之类写不进去，忽略：顶多下次少一句提醒 */
+  }
+}
+
 export async function signIn(email: string, password: string, mode: 'login' | 'register'): Promise<void> {
   const result = mode === 'register' ? await api.register(email, password) : await api.login(email, password);
+
+  /*
+   * 本地笔记是和「这台设备」绑定的，不是和账号绑定的。换一个账号登录时，
+   * 上一个人的笔记仍然留在列表里，还会跟着一起同步过去。
+   * 不提醒的话，两个人共用一台电脑就会串数据。
+   */
+  const previous = readLastEmail();
+  const switched = Boolean(previous && previous !== result.user.email.toLowerCase());
+  const mine = state.notes.filter((note) => note.origin !== 'demo').length;
+
   setToken(result.token);
   set({ account: { email: result.user.email }, syncError: null });
+  writeLastEmail(result.user.email);
 
   // 换账号要从头拉一遍，否则会带着上一个账号的游标
   await local.writeMeta('cursor', 0);
@@ -867,13 +897,25 @@ export async function signIn(email: string, password: string, mode: 'login' | 'r
 
   if (pulled > 0) {
     await dropDemoNotes();
-    toast(`接上了，拿到 ${pulled} 条笔记`);
+    toast(
+      switched && mine > 0
+        ? `接上了，拿到 ${pulled} 条。这台设备上还有 ${previous} 的 ${mine} 条笔记，会一起出现在这里`
+        : `接上了，拿到 ${pulled} 条笔记`,
+      switched && mine > 0 ? 'warn' : 'ok',
+    );
     return;
   }
 
   await promoteDemoNotes();
   await syncNow(true);
-  toast(mode === 'register' ? '账号建好了，本机的笔记开始同步' : '登录成功，这台设备的笔记已接上');
+  toast(
+    switched && mine > 0
+      ? `账号建好了。这台设备上还有 ${previous} 的 ${mine} 条笔记，会一起同步到这个账号`
+      : mode === 'register'
+        ? '账号建好了，本机的笔记开始同步'
+        : '登录成功，这台设备的笔记已接上',
+    switched && mine > 0 ? 'warn' : 'ok',
+  );
 }
 
 export async function signOut(): Promise<void> {
