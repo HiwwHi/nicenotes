@@ -918,6 +918,8 @@ export async function importJson(raw: string): Promise<number> {
       createdAt: Number(item.createdAt ?? updatedAt),
       updatedAt,
       deletedAt: item.deletedAt ?? null,
+      // 归档状态也要带回来，否则「不再复习」的笔记会重新涌进复习队列
+      archivedAt: typeof item.archivedAt === 'number' ? item.archivedAt : null,
       memory: {
         ...freshMemory(updatedAt),
         ...(item.memory ?? {}),
