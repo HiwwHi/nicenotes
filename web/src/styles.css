@@ -2308,3 +2308,9 @@ mark.hit {
     display: none !important;
   }
 }
+
+/* 批量操作条里「有几条不在当前搜索结果里」的补充说明 */
+.bulk-hidden {
+  color: var(--mid);
+  font-weight: 400;
+}

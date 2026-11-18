@@ -333,10 +333,19 @@ export function Stream({
 
     const ids = pool.map((note) => note.id);
     const allPicked = ids.length > 0 && ids.every((id) => selected.has(id));
+    /*
+     * 选中状态是跨搜索保留的，但界面上只有一部分看得见。
+     * 换了个搜索词之后可能一条选中的都不在眼前，底部却还写着「已选 2 条」——
+     * 这时候按删除，删掉的是屏幕上一个都看不到的东西。说清楚差多少。
+     */
+    const hidden = selected.size - ids.filter((id) => selected.has(id)).length;
 
     return (
       <div className="bulk-bar">
-        <span className="bulk-count">已选 {selected.size} 条</span>
+        <span className="bulk-count">
+          已选 {selected.size} 条
+          {hidden > 0 && <span className="bulk-hidden">（{hidden} 条不在当前结果里）</span>}
+        </span>
 
         <div className="bulk-actions">
           <button
