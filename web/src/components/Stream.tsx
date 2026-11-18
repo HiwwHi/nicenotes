@@ -451,7 +451,7 @@ export function Stream({
         </div>
       ) : peek ? (
         <div className="lead">
-          <PeekCard note={peek} onEdit={() => onEdit(peek)} />
+          <PeekCard note={peek} onEdit={() => onEdit(peek)} nextAt={nextAt} />
         </div>
       ) : (
         <div className="rest">
