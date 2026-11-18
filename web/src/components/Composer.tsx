@@ -16,26 +16,54 @@ interface Props {
 
 const DRAFT_KEY = 'nicenotes.draft';
 
+/**
+ * 草稿：新建的笔记和改到一半的笔记都存。
+ *
+ * 只存新建的那一份是不够的 —— 编辑一条长笔记时切走应用、标签页被系统回收，
+ * 回来改动全没了，而且没有任何痕迹。存在同一个键里，用 noteId 区分是谁的：
+ * null 表示「还没存过的新笔记」。
+ */
+interface Draft {
+  text: string;
+  noteId: string | null;
+}
+
+function readDraft(): Draft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    // 老格式是直接存的纯文本，没有 JSON 头
+    if (!raw.startsWith('{')) return { text: raw, noteId: null };
+    const parsed = JSON.parse(raw) as { text?: unknown; noteId?: unknown };
+    if (typeof parsed.text !== 'string') return null;
+    return { text: parsed.text, noteId: typeof parsed.noteId === 'string' ? parsed.noteId : null };
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(text: string, noteId: string | null): void {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ text, noteId } satisfies Draft));
+  } catch {
+    /* 无痕模式写不进去 */
+  }
+}
+
 export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
   /**
    * 新建时先把上次没写完的草稿捡回来。
    * 手机上记东西最容易被打断（来电、切走、误关），写了一半全没了很伤。
    */
+  const wanted = mode === 'edit' ? (noteId ?? null) : null;
   const [text, setText] = useState(() => {
-    if (mode !== 'create' || initial) return initial;
-    try {
-      return localStorage.getItem(DRAFT_KEY) ?? '';
-    } catch {
-      return '';
-    }
+    const draft = readDraft();
+    if (draft && draft.noteId === wanted && draft.text.trim()) return draft.text;
+    return initial;
   });
   const [restored] = useState(() => {
-    if (mode !== 'create' || initial) return false;
-    try {
-      return Boolean(localStorage.getItem(DRAFT_KEY));
-    } catch {
-      return false;
-    }
+    const draft = readDraft();
+    return Boolean(draft && draft.noteId === wanted && draft.text.trim());
   });
   const { account } = useApp();
   const [busy, setBusy] = useState(false);
@@ -45,10 +73,8 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 边写边存，停手半秒就落盘
+  // 边写边存，停手半秒就落盘。新建和编辑都存
   useEffect(() => {
-    if (mode !== 'create') return;
-
     if (!text.trim()) {
       try {
         localStorage.removeItem(DRAFT_KEY);
@@ -58,16 +84,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem(DRAFT_KEY, text);
-      } catch {
-        /* 无痕模式写不进去 */
-      }
-    }, 500);
-
+    const timer = window.setTimeout(() => writeDraft(text, wanted), 500);
     return () => window.clearTimeout(timer);
-  }, [text, mode]);
+  }, [text, wanted]);
 
   function dropDraft() {
     try {
@@ -145,7 +164,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
         <header className="sheet-head">
           <h2>
             {mode === 'create' ? '记一条' : '编辑'}
-            {restored && <span className="draft-badge">接着上次没写完的</span>}
+            {restored && (
+              <span className="draft-badge">{mode === 'edit' ? '接着上次改到一半的' : '接着上次没写完的'}</span>
+            )}
           </h2>
 
           <div className="sheet-tools">
