@@ -2241,3 +2241,19 @@ mark.hit {
   color: var(--accent);
   opacity: 0.8;
 }
+
+/*
+ * 清空数据的二次确认态。
+ *
+ * 用 .btn.xxx 两个类提高特异性 —— .btn-ghost 给的是透明底 + 灰边，
+ * 单靠后出现的 .link-danger 盖不住它。
+ */
+.btn.btn-wipe-confirm {
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line-strong));
+}
+
+.btn.btn-wipe-confirm:hover {
+  background: color-mix(in srgb, var(--bad) 16%, var(--bad-soft));
+}

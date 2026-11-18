@@ -3,7 +3,7 @@ import { hasBackend } from '../lib/api';
 import { pastLabel } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
-import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp } from '../store';
+import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp, wipeLocal } from '../store';
 
 interface Props {
   theme: Theme;
@@ -24,6 +24,8 @@ export function Settings({ theme, onTheme }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usage, setUsage] = useState<string | null>(null);
+  // 清空要连点两次：第一次只是把按钮变成确认态，6 秒内不再点就复原
+  const [confirmWipe, setConfirmWipe] = useState(false);
 
   // 顺手报一下本地占了多少，几百条笔记也就几百 KB，但知道个量级安心
   useEffect(() => {
@@ -335,6 +337,28 @@ export function Settings({ theme, onTheme }: Props) {
               event.target.value = '';
             }}
           />
+        </div>
+
+        <p className="panel-desc panel-desc-gap">
+          清空只影响这台设备。登录状态下清空后会立刻从服务器把笔记拉回来 —— 想把云端一起清掉，
+          得先登出再清。
+        </p>
+        <div className="panel-actions">
+          <button
+            type="button"
+            className={`btn btn-ghost ${confirmWipe ? 'btn-wipe-confirm' : ''}`}
+            onClick={() => {
+              if (!confirmWipe) {
+                setConfirmWipe(true);
+                window.setTimeout(() => setConfirmWipe(false), 6000);
+                return;
+              }
+              setConfirmWipe(false);
+              void wipeLocal();
+            }}
+          >
+            {confirmWipe ? '再点一次，确认清空' : '清空这台设备的笔记'}
+          </button>
         </div>
       </div>
 

@@ -941,6 +941,43 @@ export async function importJson(raw: string): Promise<number> {
   return merged.length;
 }
 
+/**
+ * 清空这台设备上的数据。
+ *
+ * 未登录：笔记真的没了，所以界面上要二次确认。
+ * 已登录：本机清空后立刻从服务器重新拉一遍 —— 相当于把本地缓存扔掉重来，
+ * 云端那份不受影响。
+ */
+export async function wipeLocal(): Promise<void> {
+  await local.clearAll();
+  // 清空就是真的空着。不写这个标记的话，下次打开又会塞回 9 条示例
+  await local.writeMeta('seeded', true);
+
+  set({
+    notes: [],
+    currentId: null,
+    revealed: false,
+    sessionDone: [],
+    newToday: 0,
+    newDay: dayKey(Date.now()),
+    log: {},
+    lastSyncAt: null,
+  });
+
+  if (getToken() && hasBackend) {
+    await local.writeMeta('cursor', 0);
+    const pulled = await syncNow(true);
+    if (pulled === null) {
+      toast('本机清空了，但没连上服务器，稍后会自动重试', 'warn');
+    } else {
+      toast(`本机清空了，从服务器拉回 ${pulled} 条`, 'ok');
+    }
+    return;
+  }
+
+  toast('这台设备上的笔记清空了');
+}
+
 export interface ImportResult {
   added: number;
   skipped: number;
