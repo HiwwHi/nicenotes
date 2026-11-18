@@ -250,6 +250,30 @@ export function Stream({
     return () => window.removeEventListener('nicenotes:open-note', onOpen);
   }, [alive, heroId, jump, onClearQuery, searching]);
 
+  /*
+   * 搜索框里按回车：展开第一条并滚过去。
+   *
+   * 这里不走 jump —— 那个是顺着内链跳的逻辑，会往返回栈里压一层，
+   * 顶部就会冒出「回到 xx」。从搜索直接看第一条不需要回头路。
+   */
+  useEffect(() => {
+    if (!searching || !result || result.hits.length === 0) return;
+
+    const onOpenFirst = () => {
+      const first = result.hits[0]?.note;
+      if (!first) return;
+      openIdRef.current = first.id;
+      setOpenId(first.id);
+      setBackStack([]);
+      requestAnimationFrame(() => {
+        document.getElementById(`note-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    };
+
+    window.addEventListener('nicenotes:open-first-hit', onOpenFirst);
+    return () => window.removeEventListener('nicenotes:open-first-hit', onOpenFirst);
+  }, [result, searching]);
+
   function toggle(id: string) {
     const next = openId === id ? null : id;
     openIdRef.current = next;

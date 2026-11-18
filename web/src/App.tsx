@@ -272,6 +272,12 @@ export default function App() {
                 placeholder="搜笔记，汉字或拼音首字母"
                 spellCheck={false}
                 aria-label="搜索笔记"
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return;
+                  // 搜完按回车直接看第一条，不用再拿鼠标去点
+                  event.preventDefault();
+                  window.dispatchEvent(new CustomEvent('nicenotes:open-first-hit'));
+                }}
               />
               {query ? (
                 <button
