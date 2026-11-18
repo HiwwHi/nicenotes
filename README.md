@@ -48,6 +48,8 @@ If you cannot recall it, expand it and answer one question: how much did you rem
 
 The interval stretches with every review, up to one year. The next review time is printed right under the buttons — that one line of small text is the most important feedback in the whole product. It is what makes you believe the system is really on top of this.
 
+Three new notes a day, the rest come back when they are due. If you still want another round, the card at the top has **review one early** — it picks whichever note is due soonest.
+
 ### Code and logs do not read as prose
 
 Anything wrapped in backticks renders as a monospaced fragment, and three backticks fence off a whole block:
@@ -207,6 +209,7 @@ Once installed it opens offline too — the page and its JS/CSS are cached local
 | <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Forgot / Fuzzy / Remembered |
 | <kbd>N</kbd> | New note |
 | <kbd>/</kbd> | Jump to search |
+| <kbd>Enter</kbd> | Open the first search result |
 | <kbd>Esc</kbd> | Clear search / leave settings |
 | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Save |
 
@@ -250,6 +253,8 @@ nicenotes/
 - Search, related-note suggestions and scheduling all run in the browser. They make no requests.
 - No analytics, no tracking, no third-party fonts or CDNs.
 - Nine sample notes are seeded on first open. They are never synced; once an account you sign into already has content, they are removed.
+- Settings → Data → **wipe this device** (tap twice to confirm). While signed in, wiping only clears the local copy and pulls everything back from the server — the cloud is untouched.
+- Local notes belong to *this device*, not to an account. Signing into a different account on the same machine now tells you how many notes are still here from the previous one, so two people sharing a laptop do not silently mix their notes.
 
 ## Known limitations
 
