@@ -219,6 +219,35 @@ try {
   const history = await api(`/api/notes/${noteA.id}/history`, { headers: auth });
   check('落败版本进了历史', (history.body?.versions ?? []).some((v) => v.body.includes('客户端 A')));
 
+  console.log('\n历史版本上限');
+  // 连续制造 25 次冲突：旧的正文每次都会被写进 note_history，
+  // 但库里只该留最近 20 条 —— 只插不删的话这张表会一直长。
+  let histCursor = pull.since;
+  const staleBase = pull.body.notes.find((n) => n.id === noteA.id)?.updatedAt ?? 0;
+  for (let i = 0; i < 25; i += 1) {
+    const res = await api('/api/sync', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({
+        since: histCursor,
+        notes: [
+          {
+            ...noteA,
+            body: `冲突第 ${i} 次的内容`,
+            updatedAt: Date.now() + 10_000 + i * 1000,
+            baseUpdatedAt: staleBase,
+          },
+        ],
+      }),
+    });
+    histCursor = res.body?.since ?? histCursor;
+  }
+  const hist = await api(`/api/notes/${noteA.id}/history`, { headers: auth });
+  check('历史接口最多返回 20 条', (hist.body?.versions ?? []).length <= 20);
+  // 历史存的是被顶掉的那一版，所以最前面应该停在第 23 次（第 24 次把它顶掉了）
+  check('历史最前面是被顶掉的那一版', (hist.body?.versions ?? [])[0]?.body?.includes('冲突第 23 次') ?? false);
+  globalThis.__histCheck = { noteId: noteA.id };
+
   console.log('\n其他');
   const badToken = await api('/api/sync', {
     method: 'POST',
@@ -238,6 +267,18 @@ try {
 } finally {
   child.kill();
   await sleep(300);
+  // 进程停了再开库看：历史表到底留了多少行
+  if (globalThis.__histCheck) {
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath, { readOnly: true });
+      const row = db.prepare('SELECT COUNT(*) AS n FROM note_history WHERE note_id = ?').get(globalThis.__histCheck.noteId);
+      db.close();
+      check(`历史表只留 20 行（实际 ${row?.n}）`, (row?.n ?? 99) <= 20);
+    } catch (error) {
+      console.log('  (历史表检查跳过：' + error.message + ')');
+    }
+  }
   rmSync(dir, { recursive: true, force: true });
   console.log(`\n${pass} 通过，${fail} 失败`);
   if (fail > 0 && logs.length) console.log('\n服务日志：\n' + logs.join('').slice(0, 1200));

@@ -195,13 +195,34 @@ export function listNotesSince(userId: string, since: number): NoteRow[] {
     .all(userId, since) as unknown as NoteRow[];
 }
 
+/** 每条笔记最多留这么多个历史版本，读和写用同一个数 */
+const HISTORY_KEEP = 20;
+
 export function appendHistory(userId: string, noteId: string, body: string, savedAt: number, replacedAt: number): void {
   db.prepare(
     'INSERT INTO note_history (user_id, note_id, body, saved_at, replaced_at) VALUES (?, ?, ?, ?, ?)',
   ).run(userId, noteId, body, savedAt, replacedAt);
+
+  /*
+   * 顺手裁掉老的。
+   *
+   * 之前只插不删，读的时候 LIMIT 20 挡在出口 —— 库里其实一直在长，而每条
+   * 都可能是一整篇笔记（最长两万字）。一台跑几年的机器上这个表能堆到很大，
+   * 而且没人会去翻第二十一条。
+   */
+  db.prepare(
+    `DELETE FROM note_history
+      WHERE user_id = ? AND note_id = ?
+        AND rowid NOT IN (
+          SELECT rowid FROM note_history
+           WHERE user_id = ? AND note_id = ?
+           ORDER BY replaced_at DESC, rowid DESC
+           LIMIT ${HISTORY_KEEP}
+        )`,
+  ).run(userId, noteId, userId, noteId);
 }
 
-export function listHistory(userId: string, noteId: string, limit = 20): { body: string; saved_at: number; replaced_at: number }[] {
+export function listHistory(userId: string, noteId: string, limit = HISTORY_KEEP): { body: string; saved_at: number; replaced_at: number }[] {
   return db
     .prepare(
       'SELECT body, saved_at, replaced_at FROM note_history WHERE user_id = ? AND note_id = ? ORDER BY replaced_at DESC LIMIT ?',
