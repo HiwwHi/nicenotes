@@ -2186,7 +2186,15 @@ mark.hit {
   .code {
     background: #f5f5f5;
     border-color: #d8d8d8;
+    /*
+     * 纸是有宽度的。屏幕上看代码块和宽表格靠横向滚动，打印时那个滚动容器
+     * 会直接把超出的部分裁掉 —— 打出来只剩左边半截，右边凭空消失。
+     */
+    overflow: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
+
 }
 
 /* 表格：对比参数、寄存器位域这类内容，比一堆文字清楚 */
@@ -2256,4 +2264,26 @@ mark.hit {
 
 .btn.btn-wipe-confirm:hover {
   background: color-mix(in srgb, var(--bad) 16%, var(--bad-soft));
+}
+
+
+/*
+ * 打印：宽表格不要被裁掉。
+ *
+ * 这几条得放在文件最末尾 —— 上面 .table-wrap 的基础规则写的是 overflow-x:
+ * auto + 单元格不换行，写在前面的 @media print 里会被它们盖住，等于没写。
+ */
+@media print {
+  .table-wrap {
+    overflow: visible;
+  }
+
+  .table-wrap table {
+    min-width: 0;
+  }
+
+  .table-wrap th,
+  .table-wrap td {
+    white-space: normal;
+  }
 }
