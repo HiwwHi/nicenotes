@@ -1,5 +1,6 @@
 import { dueLabel, pastLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
+import { reviewEarly, toast } from '../store';
 import type { StoredNote } from '../types';
 import { PencilIcon } from './Icons';
 import { Rich } from './Rich';
@@ -18,6 +19,10 @@ interface Props {
 export function PeekCard({ note, onEdit, nextAt = null }: Props) {
   const now = Date.now();
   const { title, rest } = splitBody(note.body);
+
+  function early() {
+    if (!reviewEarly()) toast('还没有复习过的笔记，先记一条吧', 'warn');
+  }
 
   return (
     <article className="card">
@@ -47,6 +52,14 @@ export function PeekCard({ note, onEdit, nextAt = null }: Props) {
         <button type="button" className="link" onClick={onEdit}>
           <PencilIcon />
           改一下
+        </button>
+        <span className="dot-sep" />
+        {/*
+         * 今天都看完了，但想再过一条 —— 之前 store 里有个 reviewEarly
+         * 一直是死代码，界面上根本没有地方能触发它。
+         */}
+        <button type="button" className="link" onClick={() => void early()}>
+          提前复习一条
         </button>
       </div>
     </article>

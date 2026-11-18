@@ -668,12 +668,20 @@ export function skip(): void {
 }
 
 /** 今天没有到期的了，但用户想提前看一条 */
-export function reviewEarly(): void {
+/**
+ * 今天没有到期的了，但用户想提前看一条。
+ *
+ * 返回 false 表示没有可提前复习的（一条都还没复习过）—— 调用方据此给个
+ * 说明，免得按钮点下去毫无反应。
+ */
+export function reviewEarly(): boolean {
   const pool = visibleNotes(state.notes).filter((note) => !isNew(note) && !isArchived(note));
-  if (pool.length === 0) return;
+  if (pool.length === 0) return false;
   pool.sort((a, b) => a.memory.due - b.memory.due);
   const note = pool[0];
-  if (note) set({ currentId: note.id, revealed: false });
+  if (!note) return false;
+  set({ currentId: note.id, revealed: false });
+  return true;
 }
 
 export function nextSoonest(): number | null {
