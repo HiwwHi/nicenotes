@@ -809,6 +809,9 @@ export async function syncNow(silent = false): Promise<number | null> {
     if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
       setToken(null);
       set({ account: null });
+      // 令牌 30 天过期。不解释的话，用户只会看到自己「莫名其妙退出了」，
+      // 而且笔记不再同步也不知道为什么。
+      toast('登录过期了，重新登录一下就能继续同步', 'warn');
       return null;
     }
 
