@@ -244,6 +244,23 @@ try {
   check('非数字的 due 兜底成 number', dirtyNote ? typeof dirtyNote.memory.due === 'number' && Number.isFinite(dirtyNote.memory.due) : false);
   check('ease 缺失时用默认值', dirtyNote ? dirtyNote.memory.ease === 2.5 : false);
 
+  console.log('\n截断不切表情');
+  // 第 20000 个字符正好是 emoji 的高位代理：直接 slice 会留下半个字符
+  const longBody = 'a'.repeat(19_999) + '😀' + 'b'.repeat(20);
+  const clipped = await api('/api/sync', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      since: cursor,
+      notes: [{ ...noteA, id: 'clip-00001', body: longBody, updatedAt: Date.now() + 2, baseUpdatedAt: 0 }],
+    }),
+  });
+  const clipNote = (clipped.body?.notes ?? []).find((n) => n.id === 'clip-00001');
+  const stored = clipNote?.body ?? '';
+  const tail = stored.charCodeAt(stored.length - 1);
+  check('超长正文被截到上限', stored.length <= 20_000);
+  check('末尾不是孤立的半个 emoji', !(tail >= 0xd800 && tail <= 0xdbff));
+
   console.log('\n历史版本上限');
   // 连续制造 25 次冲突：旧的正文每次都会被写进 note_history，
   // 但库里只该留最近 20 条 —— 只插不删的话这张表会一直长。

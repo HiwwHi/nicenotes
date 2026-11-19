@@ -25,6 +25,20 @@ const FALLBACK_MEMORY: Memory = {
   lastGrade: null,
 };
 
+/**
+ * 按字符数截断，但不切开代理对。
+ *
+ * emoji、部分生僻字在 JS 里占两个 code unit，直接从中间 slice 会留下一个
+ * 孤立的高位代理 —— 存进库再读出来就是乱码。前端那份（clipBody）早就
+ * 这么处理了，这是服务端这一侧的防线。
+ */
+function clipBody(text: string): string {
+  if (text.length <= MAX_BODY) return text;
+  const last = text.charCodeAt(MAX_BODY - 1);
+  const paired = last >= 0xd800 && last <= 0xdbff;
+  return text.slice(0, paired ? MAX_BODY - 1 : MAX_BODY);
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min;
 
@@ -51,7 +65,7 @@ function normalizeMemory(raw: unknown, now: number): Memory {
 function normalizeNote(input: SyncNote, now: number): Note | null {
   if (!input || typeof input !== 'object') return null;
   if (typeof input.id !== 'string' || !ID_PATTERN.test(input.id)) return null;
-  const body = typeof input.body === 'string' ? input.body.slice(0, MAX_BODY) : '';
+  const body = typeof input.body === 'string' ? clipBody(input.body) : '';
   const updatedAt = clamp(Number(input.updatedAt ?? now), 0, Number.MAX_SAFE_INTEGER);
 
   return {
