@@ -1242,7 +1242,7 @@ export function buildHtml(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NiceNotes · ${notes.length} 条笔记</title>
+<title>NiceNotes · ${notes.length} 条笔记 · ${new Date().toLocaleDateString('zh-CN')}</title>
 <style>
   :root { color-scheme: light; }
   body {
