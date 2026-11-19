@@ -482,7 +482,7 @@ export function Stream({
           <span className="rest-line" />
           <span className="rest-text">
             {alive.length === 0
-              ? '还是空的。写一句，它就会出现在这里。'
+              ? '还是空的。按 N 记一条，写一句它就出现在这里。'
               : `今天的都看完了${nextAt ? `，下一次是${dueLabel(nextAt, now)}` : ''}`}
           </span>
           <span className="rest-line" />
