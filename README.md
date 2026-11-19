@@ -211,7 +211,7 @@ Once installed it opens offline too — the page and its JS/CSS are cached local
 | <kbd>/</kbd> | Jump to search |
 | <kbd>Enter</kbd> | Open the first search result |
 | <kbd>Esc</kbd> | Clear search / leave settings |
-| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Save |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Ctrl</kbd>+<kbd>S</kbd> | Save |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Print (just the open note, if one is open) |
 
 ## Project layout

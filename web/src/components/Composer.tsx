@@ -123,6 +123,16 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
       if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         submitRef.current();
+        return;
+      }
+
+      /*
+       * Ctrl/Cmd+S 也存。写到一半手会自己按这个 —— 不接的话弹出来的是
+       * 浏览器的「保存网页」，把整个应用存成一个文件。
+       */
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        submitRef.current();
       }
     };
     document.addEventListener('keydown', onKey);

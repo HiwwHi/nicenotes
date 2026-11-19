@@ -317,6 +317,9 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 在编辑框里保存
           </li>
           <li>
+            <kbd>Ctrl</kbd> + <kbd>S</kbd> 在编辑框里保存
+          </li>
+          <li>
             <kbd>Shift</kbd> + <kbd>Tab</kbd> 退一级缩进
           </li>
           <li>

@@ -236,7 +236,7 @@ npm start          # 后端同时托管前端静态文件，只有一个端口
 | <kbd>/</kbd> | 跳到搜索框 |
 | <kbd>Enter</kbd> | 搜索结果里直接看第一条 |
 | <kbd>Esc</kbd> | 清空搜索 / 退出设置 |
-| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | 保存 |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Ctrl</kbd>+<kbd>S</kbd> | 保存 |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | 打印（展开着就只打那一条） |
 
 ## 目录结构
