@@ -388,12 +388,25 @@ function bindStorageEvents(): void {
 function bindVisibilityEvents(): void {
   if (!hasBackend) return;
 
-  document.addEventListener('visibilitychange', () => {
+  const catchUp = () => {
     if (document.visibilityState !== 'visible') return;
     if (!getToken()) return;
     if (Date.now() - (state.lastSyncAt ?? 0) < 60_000) return;
     void syncNow(true);
-  });
+  };
+
+  document.addEventListener('visibilitychange', catchUp);
+
+  /*
+   * 页面一直开着、人也一直不动的时候，别的设备改了什么这边永远收不到 ——
+   * 只有切标签、断网恢复、或者手动点顶栏那三种时机才拉。五分钟问一次，
+   * 代价是一次很小的请求，换来「另一台机器上刚记的东西这边能自己出现」。
+   */
+  window.setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    if (!getToken()) return;
+    void syncNow(true);
+  }, 5 * 60_000);
 }
 
 export async function init(): Promise<void> {
