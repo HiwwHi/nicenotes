@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, hasBackend } from './lib/api';
 import { dayKey, splitBody } from './lib/date';
-import { plainText, splitLinks } from './lib/rich';
+import { bodyToHtml, escapeHtml, plainText } from './lib/rich';
 import * as local from './lib/db';
 import { contentHash, parseMarkdownFile, toBody } from './lib/markdown-import';
 import { GRADE_META, applyGrade, freshMemory, isDue, isNew } from './lib/scheduler';
@@ -1090,13 +1090,7 @@ export async function importMarkdownFiles(
 }
 
 /** 转义 HTML，导出独立页面用 */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+
 
 /**
  * 正文转成 HTML：该转义的转义，写着的网址留成可点的链接。
@@ -1104,15 +1098,7 @@ function escapeHtml(text: string): string {
  * 切段在转义之前做 —— 先转义再找网址的话，「&」已经变成「&amp;」，
  * 带查询串的地址会被切错位置。
  */
-function htmlBody(text: string): string {
-  return splitLinks(text)
-    .map((segment) => {
-      if (segment.kind !== 'link') return escapeHtml(segment.text);
-      const href = escapeHtml(segment.text);
-      return `<a href="${href}" target="_blank" rel="noreferrer noopener">${href}</a>`;
-    })
-    .join('');
-}
+
 
 /**
  * 导出成一个直接在浏览器里打开的 HTML。
@@ -1130,7 +1116,7 @@ export function buildHtml(): string {
       return `  <article>
     <h2>${escapeHtml(plainText(title))}</h2>
     <p class="meta">${escapeHtml(date)}</p>
-    <pre>${htmlBody(rest)}</pre>
+    <div class="body">${bodyToHtml(rest)}</div>
   </article>`;
     })
     .join('\n');
@@ -1154,10 +1140,29 @@ export function buildHtml(): string {
   }
   h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; line-height: 1.5; }
   .meta { margin: 0 0 14px; color: #9a9488; font-size: 12px; font-family: system-ui, sans-serif; }
-  pre {
-    margin: 0; white-space: pre-wrap; word-break: break-word;
-    font: 14px/1.85 ui-monospace, SFMono-Regular, Menlo, monospace;
+  .body p { margin: 0 0 10px; }
+  .body p:last-child { margin-bottom: 0; }
+  .body code {
+    background: #f1ece1; border-radius: 5px; padding: 1px 5px;
+    font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-word;
   }
+  .body pre {
+    margin: 12px 0; padding: 12px 14px; border-radius: 10px;
+    background: #f7f4ee; border: 1px solid #e6e0d4; overflow-x: auto;
+  }
+  .body pre code {
+    background: none; padding: 0; border-radius: 0;
+    font: 13.5px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre; word-break: normal;
+  }
+  .body table { border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .body th, .body td {
+    border: 1px solid #e2dbcd; padding: 6px 10px; text-align: left; vertical-align: top;
+  }
+  .body th { background: #f7f4ee; font-weight: 600; }
+  .body ul, .body ol { margin: 10px 0; padding-left: 22px; }
+  .body li { margin: 3px 0; }
   a { color: #8d5a2c; text-decoration: none; border-bottom: 1px solid #e2cdb2; word-break: break-all; }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }

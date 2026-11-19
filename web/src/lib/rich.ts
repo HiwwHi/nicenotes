@@ -213,3 +213,114 @@ export function plainText(input: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/* ------------------------------------------------------------ 导出静态 HTML */
+
+/**
+ * 把一段正文转成能直接塞进 HTML 文件的字符串。
+ *
+ * 导出那份 HTML 是给不装应用的人看的，之前只做了转义和链接化 —— 表格、
+ * 列表、代码块全都原样落在 <pre> 里，满屏的竖线和反引号。这里复用上面
+ * 同一套切分，保证「屏幕上长什么样」和「导出来长什么样」对得上。
+ *
+ * 不产出任何脚本，也不依赖 React。
+ */
+const ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+};
+
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"]/g, (ch) => ESCAPES[ch] ?? ch);
+}
+
+function linkToHtml(url: string): string {
+  const href = escapeHtml(url);
+  return `<a href="${href}" target="_blank" rel="noreferrer noopener">${href}</a>`;
+}
+
+function inlineToHtml(segment: Segment): string {
+  if (segment.kind === 'inline') return `<code>${escapeHtml(segment.text)}</code>`;
+  // 静态页里没有可以跳过去的目标，只留标题本身，别把 [[ ]] 也印出来
+  if (segment.kind === 'wiki') return escapeHtml(segment.text);
+  if (segment.kind === 'link') return linkToHtml(segment.text);
+  if (segment.kind !== 'text') return '';
+
+  return splitLinks(segment.text)
+    .map((piece) => (piece.kind === 'link' ? linkToHtml(piece.text) : escapeHtml(piece.text)))
+    .join('');
+}
+
+/** 表格单元格、列表项里也可能有行内代码和网址 */
+function cellToHtml(text: string): string {
+  return splitInline(text)
+    .map((segment) => inlineToHtml(segment))
+    .join('');
+}
+
+export function bodyToHtml(input: string): string {
+  const out: string[] = [];
+  let run: Segment[] = [];
+
+  const flush = () => {
+    if (run.length === 0) return;
+
+    let para = '';
+    const closePara = () => {
+      const trimmed = para.trim();
+      if (trimmed) out.push(`<p>${trimmed}</p>`);
+      para = '';
+    };
+
+    for (const segment of run) {
+      if (segment.kind !== 'text') {
+        para += inlineToHtml(segment);
+        continue;
+      }
+      // 空行分段落，段落里的单换行留成 <br>
+      segment.text.split(/\n{2,}/).forEach((chunk, index) => {
+        if (index > 0) closePara();
+        // 分段处的空行会在两个 chunk 上各留一个换行，不去掉的话
+        // 段落开头或结尾会多出一个 <br>
+        const clean = chunk.replace(/^\n+/, '').replace(/\n+$/, '');
+        para += inlineToHtml({ kind: 'text', text: clean }).replace(/\n/g, '<br>');
+      });
+    }
+
+    closePara();
+    run = [];
+  };
+
+  for (const segment of parseRich(input)) {
+    if (segment.kind === 'block') {
+      flush();
+      const cls = segment.lang ? ` class="language-${escapeHtml(segment.lang)}"` : '';
+      out.push(`<pre><code${cls}>${escapeHtml(segment.text)}</code></pre>`);
+      continue;
+    }
+
+    if (segment.kind === 'table') {
+      flush();
+      const head = segment.header.map((cell) => `<th>${cellToHtml(cell)}</th>`).join('');
+      const rows = segment.rows
+        .map((row) => `<tr>${row.map((cell) => `<td>${cellToHtml(cell)}</td>`).join('')}</tr>`)
+        .join('');
+      out.push(`<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`);
+      continue;
+    }
+
+    if (segment.kind === 'list') {
+      flush();
+      const tag = segment.ordered ? 'ol' : 'ul';
+      out.push(`<${tag}>${segment.items.map((item) => `<li>${cellToHtml(item)}</li>`).join('')}</${tag}>`);
+      continue;
+    }
+
+    run.push(segment);
+  }
+
+  flush();
+  return out.join('\n');
+}
