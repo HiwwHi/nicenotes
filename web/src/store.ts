@@ -379,12 +379,30 @@ function bindStorageEvents(): void {
   });
 }
 
+/**
+ * 切回这个标签页时，跟上一次同步隔得久就补一次。
+ *
+ * 场景很具体：在手机上记了一条，回到电脑上切回这个标签页 —— 不补的话
+ * 得等下一次排期（可能几分钟后）才看得见，或者手动点顶栏那个点。
+ */
+function bindVisibilityEvents(): void {
+  if (!hasBackend) return;
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!getToken()) return;
+    if (Date.now() - (state.lastSyncAt ?? 0) < 60_000) return;
+    void syncNow(true);
+  });
+}
+
 export async function init(): Promise<void> {
   if (state.ready || initializing) return;
   initializing = true;
   try {
     bindOnlineEvents();
     bindStorageEvents();
+    bindVisibilityEvents();
     const notes = await local.readNotes();
     const log = (await local.readMeta<Record<string, number>>('log')) ?? {};
     const today = dayKey(Date.now());
@@ -1281,7 +1299,13 @@ ${items}
  * 所以这个文件能原样导回来，不会被拆散或合并。
  */
 export function buildMarkdown(): string {
-  const notes = visibleNotes(state.notes).sort((a, b) => a.createdAt - b.createdAt);
+  /*
+   * 和 HTML 那份保持同一个顺序：新的在前。
+   *
+   * 原来是正序（读起来像一本按时间翻的册子），但列表和 HTML 都是倒序，
+   * 同一份数据导出两次顺序相反，用户会以为漏了什么。
+   */
+  const notes = visibleNotes(state.notes).sort((a, b) => b.createdAt - a.createdAt);
 
   return notes
     .map((note) => {
