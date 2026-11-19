@@ -348,11 +348,43 @@ function bindOnlineEvents(): void {
   });
 }
 
+/**
+ * 跨标签页的登录状态。
+ *
+ * token 放在 localStorage 里，两个标签页共享同一份 —— 但一个改了它，
+ * 另一个不会自己知道，得靠 storage 事件。
+ *
+ * 不接的话：在 A 里登出，B 仍当自己在线，下一次同步拿到 401 弹一句
+ * 「登录过期了」—— 明明是用户自己刚在别处退的。
+ */
+function bindStorageEvents(): void {
+  if (!hasBackend) return;
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== TOKEN_KEY) return;
+
+    if (!event.newValue) {
+      set({ account: null, lastSyncAt: null, syncError: null });
+      return;
+    }
+
+    // 另一个标签页登录了：确认是谁，然后这边也跟着切过去并拉一遍数据
+    void api
+      .me(event.newValue)
+      .then((result) => {
+        set({ account: { email: result.user.email }, syncError: null });
+        void syncNow(true);
+      })
+      .catch(() => undefined);
+  });
+}
+
 export async function init(): Promise<void> {
   if (state.ready || initializing) return;
   initializing = true;
   try {
     bindOnlineEvents();
+    bindStorageEvents();
     const notes = await local.readNotes();
     const log = (await local.readMeta<Record<string, number>>('log')) ?? {};
     const today = dayKey(Date.now());
