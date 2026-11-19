@@ -155,8 +155,13 @@ setInterval(tidySessions, 60 * 60 * 1000).unref();
 
 serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? '0.0.0.0' }, (info) => {
   console.log(`NiceNotes API 已启动  http://127.0.0.1:${info.port}`);
+  // 这三行是排查时最先要看的：会不会连错库、注册开没开、前端到底托管了没有
+  console.log(`注册 ${allowRegister ? '开放' : '关闭（ALLOW_REGISTER=0）'}`);
+  console.log(`数据库 ${process.env.DB_PATH ?? '(默认位置)'}`);
   if (existsSync(join(webDist, 'index.html'))) {
     console.log(`同时托管前端静态文件：${webDist}`);
+  } else {
+    console.log(`只跑 API（没找到 ${join(webDist, 'index.html')}）`);
   }
 });
 
