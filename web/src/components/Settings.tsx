@@ -70,6 +70,9 @@ export function Settings({ theme, onTheme }: Props) {
   }
 
   const visible = notes.filter((note) => !note.deletedAt).length;
+  // 归档的也算在「笔记」里，但不再参与复习 —— 数字摊开说，别让人以为
+  // 这些全都在循环里
+  const archivedCount = notes.filter((note) => !note.deletedAt && note.archivedAt).length;
   const streak = computeStreak(log, now);
   const reviews = totalReviews(log);
   const cells = buildHeatmap(log, 12, now);
@@ -255,7 +258,9 @@ export function Settings({ theme, onTheme }: Props) {
           </div>
           <div className="stat">
             <span className="stat-value">{visible}</span>
-            <span className="stat-label">笔记</span>
+            <span className="stat-label">
+              笔记{archivedCount > 0 ? `（${archivedCount} 已归档）` : ''}
+            </span>
           </div>
         </div>
 
