@@ -3,7 +3,7 @@ import { ArrowLeftIcon, CloseIcon, PlusIcon, SearchIcon, SettingsIcon } from './
 import { Composer } from './components/Composer';
 import { Settings } from './components/Settings';
 import { Stream } from './components/Stream';
-import { dayKey } from './lib/date';
+import { dayKey, pastLabel } from './lib/date';
 import { isNew } from './lib/scheduler';
 import { applyTheme, readTheme, type Theme } from './lib/theme';
 import {
@@ -376,7 +376,14 @@ export default function App() {
             <button
               type="button"
               className={`sync-dot ${app.syncing ? 'is-busy' : ''} ${app.syncError ? 'is-error' : ''}`}
-              title={app.syncError ?? (app.syncing ? '同步中' : '已连接，点一下立即同步')}
+              title={
+                app.syncError ??
+                (app.syncing
+                  ? '同步中'
+                  : app.lastSyncAt
+                    ? `${pastLabel(app.lastSyncAt)}同步过 · 点一下立即同步`
+                    : '已连接，点一下立即同步')
+              }
               aria-label="同步状态"
               onClick={() => void syncNow()}
             />
