@@ -289,8 +289,8 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
                 <span className="dot-sep" />
                 <span className={text.length > MAX_BODY ? 'tip-over' : 'tip-near'}>
                   {text.length > MAX_BODY
-                    ? `超了 ${text.length - MAX_BODY} 字，保存时会被截掉`
-                    : `已写 ${text.length} 字，上限 ${MAX_BODY}`}
+                    ? `超了 ${(text.length - MAX_BODY).toLocaleString('zh-CN')} 字，保存时会被截掉`
+                    : `已写 ${text.length.toLocaleString('zh-CN')} 字，上限 ${MAX_BODY.toLocaleString('zh-CN')}`}
                 </span>
               </>
             )}
