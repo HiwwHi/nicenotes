@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
-import { pastLabel } from '../lib/date';
+import { pastLabel, splitBody } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
 import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp, wipeLocal } from '../store';
@@ -96,6 +96,23 @@ export function Settings({ theme, onTheme }: Props) {
     link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.md`;
     link.click();
     URL.revokeObjectURL(url);
+
+    /*
+     * 正文里以 ## 开头的行，在不同工具里含义不一样 —— 这份文件的结构就是
+     * 「一条笔记 = 一个 ## 标题」，所以导回来时那些行会被当成新的一条，
+     * 把原文切成两半。格式固有的局限，改不了，但得说。
+     */
+    const risky = notes.filter(
+      (note) => !note.deletedAt && /^## /m.test(splitBody(note.body).rest),
+    ).length;
+
+    if (risky > 0) {
+      toast(
+        `导出好了。有 ${risky} 条笔记的正文里有 ## 开头的行，这份文件导回来会被拆成多条 —— 要保真请用「导出全部」那份 JSON`,
+        'warn',
+      );
+      return;
+    }
     toast('已导出 Markdown，这个文件能原样导回来');
   }
 
