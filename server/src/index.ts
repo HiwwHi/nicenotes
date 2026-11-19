@@ -32,7 +32,23 @@ const allowRegister = process.env.ALLOW_REGISTER !== '0';
 
 app.use('/api/*', cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
 
-app.get('/api/health', (c) => c.json({ ok: true, now: Date.now(), allowRegister }));
+/*
+ * startedAt 用来判断服务是不是刚重启过。
+ *
+ * 排查同步问题时第一个要问的就是这个：客户端说「一直连不上」，服务端
+ * 一看 uptime 只有 5 秒 —— 那就是在重启，不用往下查了。
+ */
+const STARTED_AT = Date.now();
+
+app.get('/api/health', (c) =>
+  c.json({
+    ok: true,
+    now: Date.now(),
+    allowRegister,
+    startedAt: STARTED_AT,
+    uptimeMs: Date.now() - STARTED_AT,
+  }),
+);
 
 app.post('/api/auth/register', async (c) => {
   if (!allowRegister) return c.json({ error: '这台服务器没开放注册' }, 403);

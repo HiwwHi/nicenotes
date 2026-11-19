@@ -261,6 +261,11 @@ try {
   check('超长正文被截到上限', stored.length <= 20_000);
   check('末尾不是孤立的半个 emoji', !(tail >= 0xd800 && tail <= 0xdbff));
 
+  console.log('\n健康检查');
+  const meta = await api('/api/health');
+  check('health 返回启动时间', typeof meta.body?.startedAt === 'number' && meta.body.startedAt > 0);
+  check('uptimeMs 是非负数', typeof meta.body?.uptimeMs === 'number' && meta.body.uptimeMs >= 0);
+
   console.log('\n历史版本上限');
   // 连续制造 25 次冲突：旧的正文每次都会被写进 note_history，
   // 但库里只该留最近 20 条 —— 只插不删的话这张表会一直长。
