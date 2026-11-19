@@ -51,7 +51,8 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
 }
 
 export const api = {
-  health: () => call<{ ok: boolean; allowRegister?: boolean }>('/health'),
+  health: () =>
+    call<{ ok: boolean; allowRegister?: boolean; startedAt?: number; uptimeMs?: number }>('/health'),
   register: (email: string, password: string) =>
     call<AuthResult>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
