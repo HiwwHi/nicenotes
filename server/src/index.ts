@@ -144,6 +144,15 @@ app.notFound((c) =>
 const port = Number(process.env.PORT ?? 8787);
 
 tidySessions();
+/*
+ * 过期会话得定期清。
+ *
+ * 原来只在启动时清一次 —— Docker 里跑着的进程可能几周不重启，每次登录
+ * 留一条过期记录在那儿躺着，越攒越多。
+ * unref 是为了别让这个定时器把进程钉住、退不出去。
+ */
+setInterval(tidySessions, 60 * 60 * 1000).unref();
+
 serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? '0.0.0.0' }, (info) => {
   console.log(`NiceNotes API 已启动  http://127.0.0.1:${info.port}`);
   if (existsSync(join(webDist, 'index.html'))) {
