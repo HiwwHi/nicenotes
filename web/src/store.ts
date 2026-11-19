@@ -1106,6 +1106,46 @@ export async function importMarkdownFiles(
  * 和 Markdown 那份不一样：那个是给工具读的，这个是给人读的 ——
  * 发给不装应用的人，双击就能看，排版也保住了。
  */
+/** 笔记够多时才生成目录，两三页的文档不需要 */
+const TOC_MIN = 8;
+
+/**
+ * 导出文档的目录，按月份折叠。
+ *
+ * 用 <details> 而不是脚本折叠 —— 这份 HTML 不能带脚本，而原生元素自带
+ * 展开收起，默认全折叠，页面一打开就是干净的。
+ */
+function buildToc(notes: StoredNote[]): string {
+  if (notes.length < TOC_MIN) return '';
+
+  const groups = new Map<string, StoredNote[]>();
+  for (const note of notes) {
+    const date = new Date(note.createdAt);
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(note);
+    else groups.set(key, [note]);
+  }
+
+  const sections = [...groups.values()]
+    .map((list) => {
+      const first = list[0];
+      if (!first) return '';
+      const date = new Date(first.createdAt);
+      const label = `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
+      const links = list
+        .map((note) => {
+          const { title } = splitBody(note.body);
+          return `<li><a href="#n-${note.id}">${escapeHtml(plainText(title))}</a></li>`;
+        })
+        .join('');
+      return `<details><summary>${label} <span class="count">${list.length}</span></summary><ul>${links}</ul></details>`;
+    })
+    .join('');
+
+  return `<nav class="toc"><p class="toc-title">目录 · ${notes.length} 条</p>${sections}</nav>`;
+}
+
 export function buildHtml(): string {
   const notes = visibleNotes(state.notes).sort((a, b) => b.createdAt - a.createdAt);
 
@@ -1115,7 +1155,7 @@ export function buildHtml(): string {
       const date = new Date(note.createdAt).toLocaleDateString('zh-CN');
       // 归档的笔记不再参与复习，导出时标一下，读者才知道哪些是「旧账」
       const archived = note.archivedAt ? ' <span class="tag">已归档</span>' : '';
-      return `  <article>
+      return `  <article id="n-${note.id}">
     <h2>${escapeHtml(plainText(title))}${archived}</h2>
     <p class="meta">${escapeHtml(date)}</p>
     <div class="body">${bodyToHtml(rest)}</div>
@@ -1172,6 +1212,23 @@ export function buildHtml(): string {
   .body ul, .body ol { margin: 10px 0; padding-left: 22px; }
   .body li { margin: 3px 0; }
   a { color: #8d5a2c; text-decoration: none; border-bottom: 1px solid #e2cdb2; word-break: break-all; }
+  .toc {
+    max-width: 680px; margin: 0 auto 22px; padding: 16px 20px;
+    background: #fff; border: 1px solid #e6e0d4; border-radius: 14px;
+    font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  }
+  .toc-title {
+    margin: 0 0 8px; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #b3ac9f;
+  }
+  .toc details { padding: 5px 0; border-top: 1px solid #f2ede3; }
+  .toc details:first-of-type { border-top: none; }
+  .toc summary { cursor: pointer; font-size: 13.5px; color: #5a544b; }
+  .toc summary .count { color: #b3ac9f; font-size: 12px; margin-left: 3px; }
+  .toc ul { list-style: none; margin: 6px 0 2px; padding: 0 0 0 16px; }
+  .toc li { margin: 3px 0; font-size: 13.5px; line-height: 1.6; }
+  .toc a { border-bottom: none; }
+  .toc a:hover { border-bottom: 1px solid #e2cdb2; }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }
     article { padding: 18px; }
@@ -1179,6 +1236,7 @@ export function buildHtml(): string {
 </style>
 </head>
 <body>
+${buildToc(notes)}
 <main>
 ${items}
 </main>
