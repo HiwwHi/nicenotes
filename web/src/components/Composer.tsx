@@ -66,6 +66,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     return Boolean(draft && draft.noteId === wanted && draft.text.trim());
   });
   const { account } = useApp();
+  // 给 closeWithHint 用：effect 里的闭包拿不到最新的 text
+  const textRef = useRef(text);
+  textRef.current = text;
   const [busy, setBusy] = useState(false);
   /** 写代码块的时候，得能先看一眼渲染成什么样再存 */
   const [tab, setTab] = useState<'write' | 'preview'>('write');
@@ -112,7 +115,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
 
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        closeWithHint();
         return;
       }
 
@@ -125,6 +128,26 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  /**
+   * 关掉编辑框，顺口说一句内容去哪了。
+   *
+   * 草稿一直在存（新建和编辑都存），但关掉的那一刻什么都不说 ——
+   * 用户只看见弹窗消失，会以为自己写的一堆东西没了。
+   */
+  function closeWithHint() {
+    /*
+     * 必须读 ref。Esc 走的是 useEffect 里的 document 监听，那个 effect 只
+     * 依赖 onClose —— 闭包里拿到的 text 会一直停在首次渲染（空字符串），
+     * 判断成「没写东西」就什么都不提示。
+     */
+    const current = textRef.current;
+    const dirty = current.trim().length > 0 && current !== initial;
+    onClose();
+    if (dirty) {
+      toast(mode === 'edit' ? '改动留作草稿了，下次打开还在' : '内容留作草稿了，下次按 N 还在');
+    }
+  }
 
   async function submit() {
     if (busy || !text.trim()) return;
@@ -160,7 +183,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     <div
       className="sheet-backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) closeWithHint();
       }}
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={mode === 'create' ? '记一条' : '编辑笔记'}>
@@ -189,7 +212,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
                 预览
               </button>
             </div>
-            <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭">
+            <button type="button" className="icon-btn" onClick={closeWithHint} aria-label="关闭">
               <CloseIcon />
             </button>
           </div>
@@ -272,7 +295,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
                 历史版本
               </button>
             ) : null}
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
+            <button type="button" className="btn btn-ghost" onClick={closeWithHint}>
               取消
             </button>
             <button type="button" className="btn btn-primary" disabled={busy || !text.trim()} onClick={() => void submit()}>
