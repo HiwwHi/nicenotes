@@ -308,7 +308,7 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>N</kbd> 记一条
           </li>
           <li>
-            <kbd>/</kbd> 跳到搜索框
+            <kbd>/</kbd> 或 <kbd>Ctrl</kbd> + <kbd>K</kbd> 跳到搜索框
           </li>
           <li>
             <kbd>Enter</kbd> 搜索结果里看第一条

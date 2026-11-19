@@ -182,6 +182,17 @@ export default function App() {
       if (event.isComposing) return;
       const target = event.target as HTMLElement | null;
       const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+
+      /*
+       * Ctrl/Cmd+K 打开搜索。大半软件都是这个组合，手比脑子快；
+       * 单独一个 / 也还留着，两个都能进。
+       */
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        focusSearch();
+        return;
+      }
+
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (event.key === 'Escape') {
