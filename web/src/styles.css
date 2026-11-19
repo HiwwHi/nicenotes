@@ -281,7 +281,10 @@ mark.hit {
 /* ---------------------------------------------------------------- 骨架 */
 
 .app {
+  /* 移动端地址栏收放时 100vh 会算错，dvh 才是真正的可视高度。
+     先写 vh 给老浏览器兜底，再写 dvh 覆盖 */
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -1679,6 +1682,8 @@ mark.hit {
   width: 100%;
   max-width: 620px;
   max-height: 84vh;
+  /* 键盘弹起时 dvh 会跟着变小，弹窗不至于被挡在下面 */
+  max-height: 84dvh;
   overflow-y: auto;
   padding: 22px 24px 20px;
   border: 1px solid var(--line);
@@ -2001,6 +2006,7 @@ mark.hit {
 
 .booting {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
 }
 
