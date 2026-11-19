@@ -186,7 +186,11 @@ export function Settings({ theme, onTheme }: Props) {
           <div className="account">
             <div className="account-row">
               <span className="account-email">{account.email}</span>
-              <span className="account-state">
+              <span
+                className="account-state"
+                // 相对时间好读，但排查问题时想知道准确到分钟的那一次
+                title={lastSyncAt ? new Date(lastSyncAt).toLocaleString('zh-CN') : undefined}
+              >
                 {syncing ? '同步中…' : lastSyncAt ? `${pastLabel(lastSyncAt)}同步过` : '还没同步'}
               </span>
             </div>
