@@ -92,8 +92,11 @@ export function Settings({ theme, onTheme }: Props) {
     try {
       const count = await importJson(await file.text());
       toast(count > 0 ? `导入 ${count} 条` : '文件里没有笔记', count > 0 ? 'ok' : 'warn');
-    } catch {
-      toast('这个文件读不了，需要之前导出的 JSON', 'error');
+    } catch (error) {
+      toast(
+        error instanceof Error && error.message ? error.message : '这个文件读不了，需要之前导出的 JSON',
+        'error',
+      );
     }
   }
 

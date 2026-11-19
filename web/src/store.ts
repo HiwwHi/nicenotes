@@ -1007,7 +1007,18 @@ export function buildExport(): string {
 }
 
 export async function importJson(raw: string): Promise<number> {
-  const parsed = JSON.parse(raw) as { notes?: Partial<StoredNote>[] };
+  const parsed = JSON.parse(raw) as { app?: string; notes?: Partial<StoredNote>[] };
+
+  /*
+   * 先认一下这是不是自己导出的东西。
+   *
+   * 之前不管什么 JSON 都往下走，结果选错文件时提示「文件里没有笔记」——
+   * 用户会以为文件坏了，其实只是拿错了。
+   */
+  if (parsed.app !== 'nicenotes' && !Array.isArray(parsed.notes)) {
+    throw new Error('这个文件不是 NiceNotes 导出的格式');
+  }
+
   const incoming = Array.isArray(parsed.notes) ? parsed.notes : [];
   const now = Date.now();
   const merged: StoredNote[] = [];
