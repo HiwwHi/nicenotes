@@ -307,7 +307,11 @@ export function bodyToHtml(input: string): string {
       const rows = segment.rows
         .map((row) => `<tr>${row.map((cell) => `<td>${cellToHtml(cell)}</td>`).join('')}</tr>`)
         .join('');
-      out.push(`<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`);
+      // 包一层：表格宽起来比正文栏还宽时，让它自己横向滚，
+      // 别把整页撑出屏幕
+      out.push(
+        `<div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`,
+      );
       continue;
     }
 

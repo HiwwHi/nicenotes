@@ -1280,7 +1280,8 @@ export function buildHtml(): string {
     font: 13.5px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
     white-space: pre; word-break: normal;
   }
-  .body table { border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  .body table { border-collapse: collapse; font-size: 13px; }
   .body th, .body td {
     border: 1px solid #e2dbcd; padding: 6px 10px; text-align: left; vertical-align: top;
   }
