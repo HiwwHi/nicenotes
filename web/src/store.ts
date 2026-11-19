@@ -1113,8 +1113,10 @@ export function buildHtml(): string {
     .map((note) => {
       const { title, rest } = splitBody(note.body);
       const date = new Date(note.createdAt).toLocaleDateString('zh-CN');
+      // 归档的笔记不再参与复习，导出时标一下，读者才知道哪些是「旧账」
+      const archived = note.archivedAt ? ' <span class="tag">已归档</span>' : '';
       return `  <article>
-    <h2>${escapeHtml(plainText(title))}</h2>
+    <h2>${escapeHtml(plainText(title))}${archived}</h2>
     <p class="meta">${escapeHtml(date)}</p>
     <div class="body">${bodyToHtml(rest)}</div>
   </article>`;
@@ -1140,6 +1142,12 @@ export function buildHtml(): string {
   }
   h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; line-height: 1.5; }
   .meta { margin: 0 0 14px; color: #9a9488; font-size: 12px; font-family: system-ui, sans-serif; }
+  .tag {
+    display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px;
+    border: 1px solid #e2dbcd; background: #f7f4ee; color: #9a9488;
+    font-size: 11px; font-weight: 400; vertical-align: middle;
+    font-family: system-ui, sans-serif;
+  }
   .body p { margin: 0 0 10px; }
   .body p:last-child { margin-bottom: 0; }
   .body code {
