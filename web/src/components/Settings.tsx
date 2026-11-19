@@ -5,6 +5,18 @@ import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
 import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp, wipeLocal } from '../store';
 
+/**
+ * 导出文件名里的日期，用本地时区。
+ *
+ * toISOString() 给的是 UTC —— 北京时间早上 8 点之前导出，文件名会变成
+ * 昨天。一个笔记应用导出的文件名写着别人的日期，看着就像出了 bug。
+ */
+function todayStamp(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 interface Props {
   theme: Theme;
   onTheme: (theme: Theme) => void;
@@ -67,7 +79,7 @@ export function Settings({ theme, onTheme }: Props) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `nicenotes-${todayStamp()}.json`;
     link.click();
     URL.revokeObjectURL(url);
     toast('已导出，是一个普通 JSON 文件');
@@ -93,7 +105,7 @@ export function Settings({ theme, onTheme }: Props) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.md`;
+    link.download = `nicenotes-${todayStamp()}.md`;
     link.click();
     URL.revokeObjectURL(url);
 
@@ -127,7 +139,7 @@ export function Settings({ theme, onTheme }: Props) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `nicenotes-${new Date().toISOString().slice(0, 10)}.html`;
+    link.download = `nicenotes-${todayStamp()}.html`;
     link.click();
     URL.revokeObjectURL(url);
     toast('导出了一个 HTML，双击就能看');
