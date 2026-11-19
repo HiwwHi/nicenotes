@@ -277,7 +277,16 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>/</kbd> 跳到搜索框
           </li>
           <li>
+            <kbd>Enter</kbd> 搜索结果里看第一条
+          </li>
+          <li>
             <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 在编辑框里保存
+          </li>
+          <li>
+            <kbd>Shift</kbd> + <kbd>Tab</kbd> 退一级缩进
+          </li>
+          <li>
+            <kbd>Ctrl</kbd> + <kbd>P</kbd> 打印（展开着就只打那一条）
           </li>
           <li>
             <kbd>Esc</kbd> 关掉编辑框 / 清空搜索 / 退出设置
