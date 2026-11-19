@@ -1245,6 +1245,8 @@ export function buildHtml(): string {
 <title>NiceNotes · ${notes.length} 条笔记 · ${new Date().toLocaleDateString('zh-CN')}</title>
 <style>
   :root { color-scheme: light; }
+  /* 点目录跳过去的时候平滑一点，一屏一屏地闪太晕 */
+  html { scroll-behavior: smooth; }
   body {
     margin: 0; padding: 40px 20px 80px; background: #f7f4ee; color: #2a2722;
     font: 16px/1.9 "Noto Serif SC", "Songti SC", Georgia, serif;
