@@ -67,6 +67,11 @@
   .toc li { margin: 3px 0; font-size: 13.5px; line-height: 1.6; }
   .toc a { border-bottom: none; }
   .toc a:hover { border-bottom: 1px solid #e2cdb2; }
+  .foot {
+    max-width: 680px; margin: 26px auto 0; padding: 14px 4px 0;
+    border-top: 1px solid #e6e0d4; color: #b3ac9f; font-size: 12px;
+    font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }
     article { padding: 18px; }
@@ -74,9 +79,9 @@
 </style>
 </head>
 <body>
-<nav class="toc"><p class="toc-title">目录 · 10 条</p><details><summary>2026 年 11 月 <span class="count">10</span></summary><ul><li><a href="#n-6418d66c-3942-4ca5-bf8c-6516fd2fc2f9">导出的 HTML 要有排版</a></li><li><a href="#n-demo-seed-0001">probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。</a></li><li><a href="#n-demo-seed-0002">看到 -517 就是 EPROBE_DEFER，不是失败。</a></li><li><a href="#n-demo-seed-0003">dmesg 里 Freeing unused kernel memory 是内核态和用户态的分界线。</a></li><li><a href="#n-demo-seed-0004">两份 dts 用了同一个 GPIO，编译一声不响，上板才发现。</a></li><li><a href="#n-demo-seed-0005">initcall_debug 只能启动前打开，别人的 log 事后用不上。</a></li><li><a href="#n-demo-seed-0006">I2C 通信失败，先量上拉电阻，再看时序。</a></li><li><a href="#n-demo-seed-0007">设备树 reg 区间重叠，编译器不报，运行时内存被踩。</a></li><li><a href="#n-demo-seed-0008">间隔重复的关键不是复习，是在「快忘记」的那一刻复习。</a></li><li><a href="#n-demo-seed-0009">本地优先不是「离线能用」，是「本地数据才是唯一真相」。</a></li></ul></details></nav>
+<nav class="toc"><p class="toc-title">目录 · 10 条</p><details><summary>2026 年 11 月 <span class="count">10</span></summary><ul><li><a href="#n-e0e21671-c25e-47e1-9fba-e6eadbf44b99">导出的 HTML 要有排版</a></li><li><a href="#n-demo-seed-0001">probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。</a></li><li><a href="#n-demo-seed-0002">看到 -517 就是 EPROBE_DEFER，不是失败。</a></li><li><a href="#n-demo-seed-0003">dmesg 里 Freeing unused kernel memory 是内核态和用户态的分界线。</a></li><li><a href="#n-demo-seed-0004">两份 dts 用了同一个 GPIO，编译一声不响，上板才发现。</a></li><li><a href="#n-demo-seed-0005">initcall_debug 只能启动前打开，别人的 log 事后用不上。</a></li><li><a href="#n-demo-seed-0006">I2C 通信失败，先量上拉电阻，再看时序。</a></li><li><a href="#n-demo-seed-0007">设备树 reg 区间重叠，编译器不报，运行时内存被踩。</a></li><li><a href="#n-demo-seed-0008">间隔重复的关键不是复习，是在「快忘记」的那一刻复习。</a></li><li><a href="#n-demo-seed-0009">本地优先不是「离线能用」，是「本地数据才是唯一真相」。</a></li></ul></details></nav>
 <main>
-  <article id="n-6418d66c-3942-4ca5-bf8c-6516fd2fc2f9">
+  <article id="n-e0e21671-c25e-47e1-9fba-e6eadbf44b99">
     <h2>导出的 HTML 要有排版</h2>
     <p class="meta">2026/11/21</p>
     <div class="body"><p>第一段普通文字，里面有 <code>i2c_transfer</code> 这样的行内代码，还有一个链接 <a href="https://www.kernel.org" target="_blank" rel="noreferrer noopener">https://www.kernel.org</a> 。</p>
@@ -140,5 +145,6 @@ i2cget -y 1 0x38 0x00</code></pre>
     <div class="body"><p>服务器只是另一台设备。同步是两台设备交换各自知道的事实，不是把数据上传备份。<br>这个区别决定了断网时你到底还能不能干活。</p></div>
   </article>
 </main>
+<footer class="foot">由 NiceNotes 导出 · 2026/11/21 09:09:10</footer>
 </body>
 </html>

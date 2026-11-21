@@ -1350,6 +1350,11 @@ export function buildHtml(): string {
   .toc li { margin: 3px 0; font-size: 13.5px; line-height: 1.6; }
   .toc a { border-bottom: none; }
   .toc a:hover { border-bottom: 1px solid #e2cdb2; }
+  .foot {
+    max-width: 680px; margin: 26px auto 0; padding: 14px 4px 0;
+    border-top: 1px solid #e6e0d4; color: #b3ac9f; font-size: 12px;
+    font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }
     article { padding: 18px; }
@@ -1361,6 +1366,7 @@ ${buildToc(notes)}
 <main>
 ${items}
 </main>
+<footer class="foot">由 NiceNotes 导出 · ${new Date().toLocaleString('zh-CN')}</footer>
 </body>
 </html>`;
 }
