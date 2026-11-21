@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { timeLabelPrecise } from '../lib/date';
+import { splitBody, timeLabelPrecise } from '../lib/date';
+import { plainText } from '../lib/rich';
 import { authToken, MAX_BODY, toast, useApp } from '../store';
 import type { HistoryVersion } from '../types';
 import { CloseIcon } from './Icons';
@@ -65,7 +66,7 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     const draft = readDraft();
     return Boolean(draft && draft.noteId === wanted && draft.text.trim());
   });
-  const { account } = useApp();
+  const { account, notes } = useApp();
   // 给 closeWithHint 用：effect 里的闭包拿不到最新的 text
   const textRef = useRef(text);
   textRef.current = text;
@@ -159,6 +160,65 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
     }
   }
 
+  /* -------------------------------------------------- 内链补全 */
+
+  /**
+   * 输入 [[ 之后列出能接上去的笔记标题。
+   *
+   * 记笔记时想连另一条，得先记得那条的标题怎么写 —— 记不住就只能先去翻一遍。
+   * 打出 [[ 就给出候选，Enter 或 Tab 接上，Esc 退出。
+   */
+  const [suggest, setSuggest] = useState<{ start: number; end: number; query: string } | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const candidates = useMemo(() => {
+    if (!suggest) return [];
+    const query = suggest.query.trim().toLowerCase();
+
+    const seen = new Set<string>();
+    const list: string[] = [];
+    for (const note of notes) {
+      if (note.deletedAt || note.id === noteId) continue;
+      const title = plainText(splitBody(note.body).title).trim();
+      if (!title || seen.has(title)) continue;
+      if (query && !title.toLowerCase().includes(query)) continue;
+      seen.add(title);
+      list.push(title);
+      if (list.length >= 6) break;
+    }
+    return list;
+  }, [notes, noteId, suggest]);
+
+  /** 光标前是不是一个还没收尾的 [[ */
+  function detectLink(value: string, caret: number) {
+    const before = value.slice(0, caret);
+    const open = before.lastIndexOf('[[');
+    if (open === -1) return null;
+
+    const between = before.slice(open + 2);
+    // 已经有 ]] 或者跨行了，说明不是正在写内链
+    if (between.includes(']]') || between.includes('\n')) return null;
+    if (between.length > 40) return null;
+
+    return { start: open, end: caret, query: between };
+  }
+
+  function applySuggestion(title: string) {
+    if (!suggest) return;
+    const next = `${text.slice(0, suggest.start)}[[${title}]]${text.slice(suggest.end)}`;
+    const caret = suggest.start + title.length + 4;
+
+    setText(next);
+    setSuggest(null);
+
+    requestAnimationFrame(() => {
+      const area = areaRef.current;
+      if (!area) return;
+      area.focus();
+      area.setSelectionRange(caret, caret);
+    });
+  }
+
   async function submit() {
     if (busy || !text.trim()) return;
     setBusy(true);
@@ -234,9 +294,39 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
             className="sheet-area"
             value={text}
             spellCheck={false}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              setActiveIdx(0);
+              setSuggest(detectLink(event.target.value, event.target.selectionStart ?? 0));
+            }}
+            onBlur={() => setSuggest(null)}
             onKeyDown={(event) => {
               // Ctrl+Enter 走全局监听，这里只管 Tab 缩进
+              // 补全浮层开着的时候，方向键和回车先归它用
+              if (suggest && candidates.length > 0) {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  setActiveIdx((index) => (index + 1) % candidates.length);
+                  return;
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  setActiveIdx((index) => (index - 1 + candidates.length) % candidates.length);
+                  return;
+                }
+                if (event.key === 'Enter' || event.key === 'Tab') {
+                  event.preventDefault();
+                  const picked = candidates[activeIdx] ?? candidates[0];
+                  if (picked) applySuggestion(picked);
+                  return;
+                }
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  setSuggest(null);
+                  return;
+                }
+              }
+
               if (event.key === 'Tab') {
                 const area = event.currentTarget;
 
@@ -270,6 +360,31 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
         ) : (
           <div className="sheet-preview">
             {text.trim() ? <Rich text={text} /> : <p className="sheet-empty">还没有内容</p>}
+          </div>
+        )}
+
+        {tab === 'write' && suggest && candidates.length > 0 && (
+          <div className="link-suggest" role="listbox" aria-label="补全笔记标题">
+            {candidates.map((title, index) => (
+              <button
+                key={title}
+                type="button"
+                role="option"
+                aria-selected={index === activeIdx}
+                className={`link-suggest-item ${index === activeIdx ? 'is-active' : ''}`}
+                // 用 mousedown 而不是 click：click 之前 textarea 会先 blur，
+                // 浮层就没了，点了个寂寞
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  applySuggestion(title);
+                }}
+                onMouseEnter={() => setActiveIdx(index)}
+              >
+                <span className="link-suggest-mark">[[</span>
+                {title}
+              </button>
+            ))}
+            <p className="link-suggest-hint">↑↓ 选，Enter 接上，Esc 不管它</p>
           </div>
         )}
 
