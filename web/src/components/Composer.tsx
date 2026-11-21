@@ -225,11 +225,30 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
   async function submit() {
     if (busy || !text.trim()) return;
     setBusy(true);
-    const ok = await onSubmit(text);
-    setBusy(false);
-    if (ok) {
-      dropDraft();
-      onClose();
+
+    /*
+     * 必须 try/finally。存储写不进去（配额满、隐私模式、库被别处删了）
+     * 时 onSubmit 会抛错 —— 以前那句 setBusy(false) 就走不到，按钮永远
+     * 停在「存着…」，用户只能刷新。
+     */
+    try {
+      const ok = await onSubmit(text);
+      if (ok) {
+        dropDraft();
+        onClose();
+      }
+    } catch (error) {
+      // 浏览器的原文是英文的（The quota has been exceeded.），
+      // 而且没说该怎么办
+      const quota = error instanceof DOMException && error.name === 'QuotaExceededError';
+      toast(
+        quota
+          ? '本机存储满了。先导出一份备份，再清掉一些旧笔记试试'
+          : '没存上，内容还在编辑框里，可以再试一次',
+        'error',
+      );
+    } finally {
+      setBusy(false);
     }
   }
 
