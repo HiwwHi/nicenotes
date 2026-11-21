@@ -11,6 +11,7 @@ import {
   changePassword,
   importJson,
   importMarkdownFiles,
+  restoreDeletedNotes,
   signIn,
   signOut,
   syncNow,
@@ -79,6 +80,8 @@ export function Settings({ theme, onTheme }: Props) {
   // 归档的也算在「笔记」里，但不再参与复习 —— 数字摊开说，别让人以为
   // 这些全都在循环里
   const archivedCount = notes.filter((note) => !note.deletedAt && note.archivedAt).length;
+  // 删除是软删除，内容还躺在库里 —— 撤销提示过了之后就没入口了，这里给一个
+  const deletedCount = notes.filter((note) => note.deletedAt).length;
   const streak = computeStreak(log, now);
   const reviews = totalReviews(log);
   const cells = buildHeatmap(log, 12, now);
@@ -390,6 +393,14 @@ export function Settings({ theme, onTheme }: Props) {
           导出是一个普通 JSON，任何编辑器都能打开。换设备、换浏览器、哪天不想用了，都能把东西带走。
         </p>
         {usage && <p className="panel-note">这台设备上用了 {usage}（浏览器一般给几百 MB）。</p>}
+        {deletedCount > 0 && (
+          <p className="panel-note">
+            有 {deletedCount} 条删掉的笔记还留着（8 秒撤销过了就看不见了），
+            <button type="button" className="link" onClick={() => void restoreDeletedNotes()}>
+              全都找回来
+            </button>
+          </p>
+        )}
         <div className="panel-actions">
           <button type="button" className="btn btn-ghost" onClick={doExport}>
             导出全部

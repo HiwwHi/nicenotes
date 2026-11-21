@@ -645,6 +645,19 @@ export async function restoreNotes(ids: string[]): Promise<void> {
   scheduleSync();
 }
 
+/** 删掉的笔记都还在库里（软删除），这里把「删除」标记清掉 */
+export async function restoreDeletedNotes(): Promise<number> {
+  const ids = state.notes.filter((note) => note.deletedAt).map((note) => note.id);
+  if (ids.length === 0) return 0;
+
+  const changed = await patchNotes(ids, { deletedAt: null });
+  if (changed.length === 0) return 0;
+
+  toast(`找回了 ${changed.length} 条`);
+  scheduleSync();
+  return changed.length;
+}
+
 export async function unarchiveNotes(ids: string[]): Promise<void> {
   const changed = await patchNotes(ids, { archivedAt: null });
   if (changed.length === 0) return;
