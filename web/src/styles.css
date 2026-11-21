@@ -2455,3 +2455,19 @@ mark.hit {
   color: var(--ink-3);
   letter-spacing: 0.02em;
 }
+
+/*
+ * 手机上把列表项那几个链接的点击区撑大。
+ *
+ * 它们只有 17px 高（文字本身的高度），而「删除」和「不再复习」就挨在旁边 ——
+ * 手指点下去经常点错。上下各加 10px 内边距、再用负 margin 抵消掉对布局的
+ * 影响，看起来完全一样，点起来是两个世界。
+ */
+@media (max-width: 720px) {
+  .item-actions .link {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: -10px;
+    margin-bottom: -10px;
+  }
+}
