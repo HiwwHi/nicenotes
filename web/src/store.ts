@@ -1069,6 +1069,17 @@ export async function importJson(raw: string): Promise<number> {
     throw new Error('这个文件不是 NiceNotes 导出的格式');
   }
 
+  /*
+   * 版本比当前新就别导了。
+   *
+   * 现在只有 v2，但将来加了字段之后，老版本读新备份会「读进来一半」——
+   * 笔记是在的，某些属性悄悄丢了。宁可整份拒绝并说清楚。
+   */
+  const version = (parsed as { version?: unknown }).version;
+  if (typeof version === 'number' && version > 2) {
+    throw new Error(`这份备份是 v${version} 导出的，当前版本读不全，先把应用更新一下`);
+  }
+
   const incoming = Array.isArray(parsed.notes) ? parsed.notes : [];
   const now = Date.now();
   const merged: StoredNote[] = [];
