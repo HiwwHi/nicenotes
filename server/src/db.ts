@@ -118,6 +118,27 @@ export function insertUser(id: string, email: string, pwHash: string, now: numbe
   );
 }
 
+/** 改密码要用，别的地方不该拿到 hash */
+export function getUserCredential(id: string): { id: string; email: string; pw_hash: string } | undefined {
+  return db.prepare('SELECT id, email, pw_hash FROM users WHERE id = ?').get(id) as
+    | { id: string; email: string; pw_hash: string }
+    | undefined;
+}
+
+export function updateUserPassword(id: string, pwHash: string): void {
+  db.prepare('UPDATE users SET pw_hash = ? WHERE id = ?').run(pwHash, id);
+}
+
+/**
+ * 改完密码把其他设备踢下线，只留当前这一条。
+ *
+ * 改密码的动机通常就是「怀疑别人登过」，这时候留着一堆旧会话等于没改。
+ */
+export function deleteOtherSessions(userId: string, keepToken: string): number {
+  const info = db.prepare('DELETE FROM sessions WHERE user_id = ? AND token <> ?').run(userId, keepToken);
+  return Number(info.changes ?? 0);
+}
+
 export function getUserById(id: string): { id: string; email: string } | undefined {
   return db.prepare('SELECT id, email FROM users WHERE id = ?').get(id) as { id: string; email: string } | undefined;
 }

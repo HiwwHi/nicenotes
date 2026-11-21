@@ -6,6 +6,7 @@ import { cors } from 'hono/cors';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
+  changePassword,
   clearAttempts,
   isValidEmail,
   loginUser,
@@ -111,6 +112,26 @@ const requireAuth: MiddlewareHandler<{ Variables: Variables }> = async (c, next)
   c.set('userId', userId);
   await next();
 };
+
+app.post('/api/auth/password', requireAuth, async (c) => {
+  // 原密码可以拿来爆破，和登录一样要限流
+  const limitKey = `pw:${c.get('userId')}`;
+  if (tooManyAttempts(limitKey)) return c.json({ error: '试太多次了，过十分钟再试' }, 429);
+
+  const body = await c.req.json().catch(() => null);
+  const current = String(body?.currentPassword ?? '');
+  const next = String(body?.newPassword ?? '');
+
+  if (next.length < 8) return c.json({ error: '新密码至少 8 位' }, 400);
+  if (next.length > 200) return c.json({ error: '新密码太长了' }, 400);
+  if (current === next) return c.json({ error: '新密码和原密码一样' }, 400);
+
+  const token = bearer(c.req.header('authorization')) ?? '';
+  const revoked = changePassword(c.get('userId'), current, next, token);
+  if (revoked === null) return c.json({ error: '原密码不对' }, 401);
+
+  return c.json({ ok: true, revoked });
+});
 
 app.post('/api/sync', requireAuth, async (c) => {
   const body = await c.req.json().catch(() => null);

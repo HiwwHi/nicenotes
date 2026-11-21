@@ -3,7 +3,20 @@ import { hasBackend } from '../lib/api';
 import { pastLabel, splitBody } from '../lib/date';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
-import { buildExport, buildHtml, buildMarkdown, importJson, importMarkdownFiles, signIn, signOut, syncNow, toast, useApp, wipeLocal } from '../store';
+import {
+  buildExport,
+  buildHtml,
+  buildMarkdown,
+  changePassword,
+  importJson,
+  importMarkdownFiles,
+  signIn,
+  signOut,
+  syncNow,
+  toast,
+  useApp,
+  wipeLocal,
+} from '../store';
 
 /**
  * 导出文件名里的日期，用本地时区。
@@ -38,6 +51,10 @@ export function Settings({ theme, onTheme }: Props) {
   const [usage, setUsage] = useState<string | null>(null);
   // 清空要连点两次：第一次只是把按钮变成确认态，6 秒内不再点就复原
   const [confirmWipe, setConfirmWipe] = useState(false);
+  // 改密码的表单默认收着，不占地方
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNext, setPwNext] = useState('');
 
   // 顺手报一下本地占了多少，几百条笔记也就几百 KB，但知道个量级安心
   useEffect(() => {
@@ -86,6 +103,21 @@ export function Settings({ theme, onTheme }: Props) {
     link.click();
     URL.revokeObjectURL(url);
     toast('已导出，是一个普通 JSON 文件');
+  }
+
+  async function doChangePassword(event: React.FormEvent) {
+    event.preventDefault();
+    if (!pwCurrent || pwNext.length < 8) return;
+
+    setBusy(true);
+    const ok = await changePassword(pwCurrent, pwNext);
+    setBusy(false);
+
+    if (ok) {
+      setPwOpen(false);
+      setPwCurrent('');
+      setPwNext('');
+    }
   }
 
   async function doImport(file: File) {
@@ -199,10 +231,48 @@ export function Settings({ theme, onTheme }: Props) {
               <button type="button" className="btn btn-primary" disabled={syncing} onClick={() => void syncNow()}>
                 {syncing ? '同步中' : '立即同步'}
               </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setPwOpen((open) => !open)}
+                aria-expanded={pwOpen}
+              >
+                {pwOpen ? '不改了' : '改密码'}
+              </button>
               <button type="button" className="btn btn-ghost" onClick={() => void signOut()}>
                 退出登录
               </button>
             </div>
+
+            {pwOpen && (
+              <form className="auth-form pw-form" onSubmit={doChangePassword}>
+                <label className="field">
+                  <span>原密码</span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={pwCurrent}
+                    onChange={(event) => setPwCurrent(event.target.value)}
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span>新密码（至少 8 位）</span>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    value={pwNext}
+                    onChange={(event) => setPwNext(event.target.value)}
+                    required
+                  />
+                </label>
+                <p className="panel-hint">改完之后，其他设备上的登录会被退出，这台保持在线。</p>
+                <button type="submit" className="btn btn-primary" disabled={busy || !pwCurrent || pwNext.length < 8}>
+                  {busy ? '改着…' : '改密码'}
+                </button>
+              </form>
+            )}
           </div>
         ) : (
           <form className="auth" onSubmit={submit}>

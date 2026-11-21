@@ -991,6 +991,30 @@ export async function signIn(email: string, password: string, mode: 'login' | 'r
   );
 }
 
+/**
+ * 改密码。
+ *
+ * 改完之后服务端会把其他设备上的会话吊销，只留当前这条 —— 改密码的动机
+ * 通常就是「怀疑别人登过」，留着旧会话等于白改。
+ */
+export async function changePassword(current: string, next: string): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+
+  try {
+    const result = await api.changePassword(token, current, next);
+    toast(
+      result.revoked > 0
+        ? `密码改好了，其他 ${result.revoked} 个会话已经退出`
+        : '密码改好了',
+    );
+    return true;
+  } catch (error) {
+    toast(error instanceof Error ? error.message : '改密码失败', 'error');
+    return false;
+  }
+}
+
 export async function signOut(): Promise<void> {
   const token = getToken();
   setToken(null);

@@ -266,6 +266,56 @@ try {
   check('health 返回启动时间', typeof meta.body?.startedAt === 'number' && meta.body.startedAt > 0);
   check('uptimeMs 是非负数', typeof meta.body?.uptimeMs === 'number' && meta.body.uptimeMs >= 0);
 
+  console.log('\n改密码');
+  const wrongPw = await api('/api/auth/password', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ currentPassword: 'not-my-password', newPassword: 'newpassword123' }),
+  });
+  check('原密码不对被拒', wrongPw.status === 401);
+
+  const shortPw = await api('/api/auth/password', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ currentPassword: 'password123', newPassword: 'short' }),
+  });
+  check('新密码太短被拒', shortPw.status === 400);
+
+  // 再开一个会话，改密码之后它应该被踢掉
+  const other = await api('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password: 'password123' }),
+  });
+  const otherToken = other.body?.token;
+  check('第二个会话已建立', typeof otherToken === 'string');
+
+  const changed = await api('/api/auth/password', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ currentPassword: 'password123', newPassword: 'newpassword456' }),
+  });
+  check('改密码成功', changed.status === 200);
+  // 前面登录测试留下过别的会话，这里只要求「至少踢掉一个」，不强求恰好 1 个
+  check('吊销了别的会话', typeof changed.body?.revoked === 'number' && changed.body.revoked >= 1);
+
+  const oldSession = await api('/api/auth/me', { headers: { authorization: `Bearer ${otherToken}` } });
+  check('旧会话已失效', oldSession.status === 401);
+
+  const stillMe = await api('/api/auth/me', { headers: auth });
+  check('当前会话还在', stillMe.status === 200);
+
+  const newLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password: 'newpassword456' }),
+  });
+  check('新密码能登录', newLogin.status === 200);
+
+  const oldLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password: 'password123' }),
+  });
+  check('旧密码登不上了', oldLogin.status === 401);
+
   console.log('\n历史版本上限');
   // 连续制造 25 次冲突：旧的正文每次都会被写进 note_history，
   // 但库里只该留最近 20 条 —— 只插不删的话这张表会一直长。

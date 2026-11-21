@@ -63,6 +63,13 @@ export const api = {
 
   logout: (token: string) => call<{ ok: true }>('/auth/logout', { method: 'POST', token }),
 
+  changePassword: (token: string, currentPassword: string, newPassword: string) =>
+    call<{ ok: true; revoked: number }>('/auth/password', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
   sync: (token: string, payload: SyncPayload) =>
     call<SyncResult>('/sync', { method: 'POST', token, body: JSON.stringify(payload) }),
 

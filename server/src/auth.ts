@@ -1,5 +1,15 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
-import { createSession, deleteSession, getSession, insertUser, getUserByEmail, pruneSessions } from './db.js';
+import {
+  createSession,
+  deleteOtherSessions,
+  deleteSession,
+  getSession,
+  getUserByEmail,
+  getUserCredential,
+  insertUser,
+  pruneSessions,
+  updateUserPassword,
+} from './db.js';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -86,4 +96,20 @@ export function clearAttempts(key: string): void {
 
 export function tidySessions(): void {
   pruneSessions(Date.now());
+}
+
+
+/**
+ * 改密码。
+ *
+ * 返回吊销了多少条别的会话 —— 改密码通常就是因为怀疑账号被别人登着，
+ * 留着旧会话等于没改。当前这条留着，不然刚改完自己也被踢出去。
+ */
+export function changePassword(userId: string, current: string, next: string, keepToken: string): number | null {
+  const row = getUserCredential(userId);
+  if (!row) return null;
+  if (!verifyPassword(current, row.pw_hash)) return null;
+
+  updateUserPassword(userId, hashPassword(next));
+  return deleteOtherSessions(userId, keepToken);
 }
