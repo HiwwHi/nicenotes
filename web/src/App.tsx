@@ -479,6 +479,11 @@ export default function App() {
               {app.toast.action.label}
             </button>
           )}
+          {/* 有些提示挺长（比如「N 条笔记没同步上去」），读完想立刻关掉，
+              不用等它自己走 */}
+          <button type="button" className="toast-close" aria-label="关掉提示" onClick={dismissToast}>
+            <CloseIcon size={12} />
+          </button>
         </div>
       )}
     </div>
