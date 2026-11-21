@@ -94,8 +94,11 @@ export function Settings({ theme, onTheme }: Props) {
   const daysSince = firstAt == null ? 0 : Math.max(1, Math.floor((now - firstAt) / 86_400_000) + 1);
   const cells = buildHeatmap(log, 12, now);
 
+  /** 导出文件名里带上条数：备份攒了几个之后，光看日期分不出内容和大小 */
+  const liveCount = notes.filter((note) => !note.deletedAt).length;
+
   function doExport() {
-    downloadText(buildExport(), `nicenotes-${todayStamp()}.json`, 'application/json');
+    downloadText(buildExport(), `nicenotes-${liveCount}条-${todayStamp()}.json`, 'application/json');
     toast('已导出，是一个普通 JSON 文件');
   }
 
@@ -133,7 +136,7 @@ export function Settings({ theme, onTheme }: Props) {
       return;
     }
 
-    downloadText(text, `nicenotes-${todayStamp()}.md`, 'text/markdown;charset=utf-8');
+    downloadText(text, `nicenotes-${liveCount}条-${todayStamp()}.md`, 'text/markdown;charset=utf-8');
 
     /*
      * 正文里以 ## 开头的行，在不同工具里含义不一样 —— 这份文件的结构就是
@@ -161,7 +164,7 @@ export function Settings({ theme, onTheme }: Props) {
       return;
     }
 
-    downloadText(html, `nicenotes-${todayStamp()}.html`, 'text/html;charset=utf-8');
+    downloadText(html, `nicenotes-${liveCount}条-${todayStamp()}.html`, 'text/html;charset=utf-8');
     toast('导出了一个 HTML，双击就能看');
   }
 
