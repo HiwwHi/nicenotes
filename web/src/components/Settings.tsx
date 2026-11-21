@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
-import { pastLabel, splitBody } from '../lib/date';
+import { pastLabel, splitBody, todayStamp } from '../lib/date';
 import { downloadText } from '../lib/download';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
@@ -18,18 +18,6 @@ import {
   useApp,
   wipeLocal,
 } from '../store';
-
-/**
- * 导出文件名里的日期，用本地时区。
- *
- * toISOString() 给的是 UTC —— 北京时间早上 8 点之前导出，文件名会变成
- * 昨天。一个笔记应用导出的文件名写着别人的日期，看着就像出了 bug。
- */
-function todayStamp(): string {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 interface Props {
   theme: Theme;

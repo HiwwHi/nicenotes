@@ -1356,14 +1356,16 @@ ${items}
  * 导出成 Markdown。格式刻意和导入规则对齐：一条笔记就是 `## 标题` 加正文，
  * 所以这个文件能原样导回来，不会被拆散或合并。
  */
-export function buildMarkdown(): string {
+export function buildMarkdown(onlyIds?: Set<string>): string {
   /*
    * 和 HTML 那份保持同一个顺序：新的在前。
    *
    * 原来是正序（读起来像一本按时间翻的册子），但列表和 HTML 都是倒序，
    * 同一份数据导出两次顺序相反，用户会以为漏了什么。
    */
-  const notes = visibleNotes(state.notes).sort((a, b) => b.createdAt - a.createdAt);
+  // 批量导出时只取选中的那些
+  const source = visibleNotes(state.notes).filter((note) => !onlyIds || onlyIds.has(note.id));
+  const notes = source.sort((a, b) => b.createdAt - a.createdAt);
 
   return notes
     .map((note) => {

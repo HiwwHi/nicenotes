@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
+import { dayGroupLabel, dayKey, dueLabel, splitBody, todayStamp } from '../lib/date';
+import { downloadText } from '../lib/download';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
 import { shuffle } from '../lib/shuffle';
-import { archiveNote, archiveNotes, removeNotes, toast, unarchiveNotes } from '../store';
+import { buildMarkdown, archiveNote, archiveNotes, removeNotes, toast, unarchiveNotes } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
@@ -341,6 +342,19 @@ export function Stream({
     exitSelect();
   }
 
+  /** 把选中的几条单独导成一份 Markdown，发给别人或者贴到别处 */
+  function bulkExport() {
+    if (selected.size === 0) return;
+    const text = buildMarkdown(new Set(selected));
+    if (!text.trim()) {
+      toast('选中的笔记没有内容', 'warn');
+      return;
+    }
+    downloadText(text, `nicenotes-选中${selected.size}条-${todayStamp()}.md`, 'text/markdown;charset=utf-8');
+    toast(`导出了 ${selected.size} 条`);
+    exitSelect();
+  }
+
   /** 归档错了要能成批救回来，一条条点「恢复复习」太慢 */
   async function bulkRestore() {
     await unarchiveNotes([...selected]);
@@ -389,6 +403,14 @@ export function Stream({
             onClick={() => setSelected(allPicked ? new Set() : new Set(ids))}
           >
             {allPicked ? '取消全选' : '全选'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={selected.size === 0}
+            onClick={bulkExport}
+          >
+            导出
           </button>
           <button
             type="button"

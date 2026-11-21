@@ -92,3 +92,16 @@ export function fullLabel(ts: number): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+
+/**
+ * 今天，yyyy-mm-dd，按本地时区。
+ *
+ * 不能用 toISOString()：那是 UTC，北京时间早上 8 点前会变成昨天。
+ * 导出文件名、批量导出都靠它。
+ */
+export function todayStamp(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
