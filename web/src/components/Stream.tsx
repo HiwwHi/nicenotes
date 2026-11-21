@@ -285,6 +285,33 @@ export function Stream({
   const backNote =
     backStack.length > 0 ? alive.find((note) => note.id === backStack[backStack.length - 1]) : undefined;
 
+  /**
+   * 谁引用了我。
+   *
+   * 展开某条笔记时，扫一遍其他笔记的正文，看谁的 [[标题]] 指过来。
+   * 同时只有一条展开，所以每次 O(n) 扫一遍就够，不用建索引。
+   */
+  const backlinks = useMemo(() => {
+    if (!openId) return [];
+    const target = alive.find((note) => note.id === openId);
+    if (!target) return [];
+
+    const title = plainText(splitBody(target.body).title).trim();
+    if (!title) return [];
+
+    const found: { id: string; title: string }[] = [];
+    for (const note of alive) {
+      if (note.id === openId) continue;
+      for (const match of note.body.matchAll(/\[\[([^[\]\n]+)\]\]/g)) {
+        if ((match[1] ?? '').trim() === title) {
+          found.push({ id: note.id, title: plainText(splitBody(note.body).title) || '(空)' });
+          break;
+        }
+      }
+    }
+    return found;
+  }, [alive, openId]);
+
   const renderNote = (note: StoredNote) => (
     <NoteItem
       key={note.id}
@@ -296,6 +323,7 @@ export function Stream({
       onDelete={() => onDelete(note.id)}
       onArchive={() => void archiveNote(note.id)}
       related={openId === note.id ? relatedHits : []}
+      backlinks={openId === note.id ? backlinks : []}
       onJump={jump}
       selectMode={selectMode}
       selected={selected.has(note.id)}
@@ -443,6 +471,7 @@ export function Stream({
                 onDelete={() => onDelete(hit.note.id)}
                 onArchive={() => void archiveNote(hit.note.id)}
                 related={openId === hit.note.id ? relatedHits : []}
+                backlinks={openId === hit.note.id ? backlinks : []}
                 onJump={jump}
                 selectMode={selectMode}
                 selected={selected.has(hit.note.id)}

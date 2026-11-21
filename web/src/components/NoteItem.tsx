@@ -21,6 +21,8 @@ interface Props {
   onDelete: () => void;
   onArchive: () => void;
   related: SearchHit[];
+  /** 正文里用 [[标题]] 指向这条笔记的那些，反过来看 */
+  backlinks: { id: string; title: string }[];
   onJump: (id: string) => void;
   /** 正在复习的那条，流里标一下 */
   featured?: boolean;
@@ -42,6 +44,7 @@ export function NoteItem({
   onDelete,
   onArchive,
   related,
+  backlinks,
   onJump,
   featured,
   selectMode,
@@ -152,6 +155,24 @@ export function NoteItem({
           {rest && (
             <div className="item-body">
               <Rich text={rest} marks={marks} />
+            </div>
+          )}
+
+          {backlinks.length > 0 && (
+            <div className="item-related">
+              <span className="item-related-label">
+                <LinkIcon />
+                被 {backlinks.length} 条提到
+              </span>
+              <ul>
+                {backlinks.map((item) => (
+                  <li key={item.id}>
+                    <button type="button" onClick={() => onJump(item.id)}>
+                      <span className="item-related-text">{item.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
