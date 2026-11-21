@@ -85,6 +85,13 @@ export function Settings({ theme, onTheme }: Props) {
   const streak = computeStreak(log, now);
   const reviews = totalReviews(log);
   const weekCount = weekReviews(log, now);
+  // 第一条笔记是什么时候写的 —— 用 reduce 而不是 Math.min(...)，笔记多了
+  // 展开成参数会爆栈
+  const firstAt = notes.reduce<number | null>(
+    (min, note) => (note.deletedAt ? min : min == null || note.createdAt < min ? note.createdAt : min),
+    null,
+  );
+  const daysSince = firstAt == null ? 0 : Math.max(1, Math.floor((now - firstAt) / 86_400_000) + 1);
   const cells = buildHeatmap(log, 12, now);
 
   function doExport() {
@@ -333,6 +340,12 @@ export function Settings({ theme, onTheme }: Props) {
             );
           })}
         </div>
+        {firstAt != null && (
+          <p className="panel-note">
+            从 {new Date(firstAt).toLocaleDateString('zh-CN')} 记到现在，跨了 {daysSince} 天。
+          </p>
+        )}
+
         <p className="panel-note">每一格是一天。空着不代表失败，只说明那天没打开。</p>
       </div>
 
