@@ -3,7 +3,7 @@ import { dayGroupLabel, dayKey, dueLabel, splitBody } from '../lib/date';
 import { plainText } from '../lib/rich';
 import { relatedNotes, searchNotes } from '../lib/search';
 import { shuffle } from '../lib/shuffle';
-import { archiveNote, archiveNotes, removeNotes, toast } from '../store';
+import { archiveNote, archiveNotes, removeNotes, toast, unarchiveNotes } from '../store';
 import type { Grade, StoredNote } from '../types';
 import { SearchIcon } from './Icons';
 import { NoteItem } from './NoteItem';
@@ -341,6 +341,12 @@ export function Stream({
     exitSelect();
   }
 
+  /** 归档错了要能成批救回来，一条条点「恢复复习」太慢 */
+  async function bulkRestore() {
+    await unarchiveNotes([...selected]);
+    exitSelect();
+  }
+
   async function bulkDelete() {
     await removeNotes([...selected]);
     exitSelect();
@@ -391,6 +397,14 @@ export function Stream({
             onClick={() => void bulkArchive()}
           >
             归档
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={selected.size === 0}
+            onClick={() => void bulkRestore()}
+          >
+            恢复复习
           </button>
           <button
             type="button"
