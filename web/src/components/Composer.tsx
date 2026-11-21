@@ -403,8 +403,11 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
         )}
 
         {tab === 'write' && suggest && candidates.length > 0 && (
-          <div className="link-suggest" role="listbox" aria-label="补全笔记标题">
-            {candidates.map((title, index) => (
+          <div className="link-suggest" aria-label="补全笔记标题">
+            {/* 提示放最上面：六条候选就把 220px 撑满了，放底部会被滚出视野 */}
+            <p className="link-suggest-hint">↑↓ 选，Enter 接上，Esc 不管它</p>
+            <div role="listbox">
+              {candidates.map((title, index) => (
               <button
                 key={title}
                 type="button"
@@ -422,8 +425,8 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
                 <span className="link-suggest-mark">[[</span>
                 {title}
               </button>
-            ))}
-            <p className="link-suggest-hint">↑↓ 选，Enter 接上，Esc 不管它</p>
+              ))}
+            </div>
           </div>
         )}
 
