@@ -260,7 +260,7 @@ nicenotes/
 
 ## Known limitations
 
-- **No rich text and no images.** The product assumes "one line plus a paragraph." Adding an editor would destroy that assumption.
+- **No editor, just a very light markup layer.** Inline `code`, fenced blocks with syntax colouring, `[[wiki links]]`, explicit `https://` URLs, tables and lists. No Markdown library — a stray `*` or `-` never turns into a surprise list. No images, no WYSIWYG.
 - **Related notes match words, not meaning.** Two notes that describe the same thing in completely different words will not be connected — that needs a model, and it is next.
 - **Sync is last-write-wins.** Edit the same passage on two devices and the later one wins while the earlier one goes to history. Sentences are not merged automatically.
 - **No password recovery.** Email only identifies an account, nothing is sent. Forget the password and you start a new account — the price of not wiring up an email service.
