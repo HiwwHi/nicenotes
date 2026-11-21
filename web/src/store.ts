@@ -1054,6 +1054,13 @@ export async function importJson(raw: string): Promise<number> {
         ...(item.memory ?? {}),
       },
       reviewCount: Number(item.reviewCount ?? 0),
+      /*
+       * 示例笔记的标记也得带回来。
+       *
+       * 不带的话，备份导出再导入之后它们就成了「真实笔记」：同步时会
+       * 一路推到云端，从此在别的设备上也删不掉，混在自己写的里面。
+       */
+      origin: item.origin === 'demo' ? 'demo' : undefined,
       baseUpdatedAt: existing?.baseUpdatedAt ?? 0,
     };
     merged.push(note);
