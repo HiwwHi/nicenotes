@@ -216,28 +216,30 @@ export function Settings({ theme, onTheme }: Props) {
             </div>
 
             {pwOpen && (
-              <form className="auth-form pw-form" onSubmit={doChangePassword}>
-                <label className="field">
-                  <span>原密码</span>
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    value={pwCurrent}
-                    onChange={(event) => setPwCurrent(event.target.value)}
-                    required
-                  />
-                </label>
-                <label className="field">
-                  <span>新密码（至少 8 位）</span>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    minLength={8}
-                    value={pwNext}
-                    onChange={(event) => setPwNext(event.target.value)}
-                    required
-                  />
-                </label>
+              <form className="auth pw-form" onSubmit={doChangePassword}>
+                {/* .field 是给 input 的类（38px 高、带边框），套在 label 上会
+                    变成「一个假输入框里塞着标签和输入框」—— 手机上挤成一团 */}
+                <input
+                  className="field"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="原密码"
+                  aria-label="原密码"
+                  value={pwCurrent}
+                  onChange={(event) => setPwCurrent(event.target.value)}
+                  required
+                />
+                <input
+                  className="field"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="新密码（至少 8 位）"
+                  aria-label="新密码"
+                  minLength={8}
+                  value={pwNext}
+                  onChange={(event) => setPwNext(event.target.value)}
+                  required
+                />
                 <p className="panel-hint">改完之后，其他设备上的登录会被退出，这台保持在线。</p>
                 <button type="submit" className="btn btn-primary" disabled={busy || !pwCurrent || pwNext.length < 8}>
                   {busy ? '改着…' : '改密码'}
