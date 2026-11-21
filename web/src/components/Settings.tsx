@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
 import { pastLabel, splitBody, todayStamp } from '../lib/date';
 import { downloadText } from '../lib/download';
-import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
+import { buildHeatmap, computeStreak, totalReviews, weekReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
 import {
   buildExport,
@@ -84,6 +84,7 @@ export function Settings({ theme, onTheme }: Props) {
   const deletedCount = notes.filter((note) => note.deletedAt).length;
   const streak = computeStreak(log, now);
   const reviews = totalReviews(log);
+  const weekCount = weekReviews(log, now);
   const cells = buildHeatmap(log, 12, now);
 
   function doExport() {
@@ -307,7 +308,10 @@ export function Settings({ theme, onTheme }: Props) {
           </div>
           <div className="stat">
             <span className="stat-value">{reviews}</span>
-            <span className="stat-label">累计复习</span>
+            <span className="stat-label">
+              累计复习
+              <span className="stat-sub">本周 {weekCount}</span>
+            </span>
           </div>
           <div className="stat">
             <span className="stat-value">{visible}</span>

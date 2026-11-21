@@ -2446,3 +2446,12 @@ mark.hit {
   background: var(--bg-deep);
   color: var(--ink);
 }
+
+/* 统计数字下面那行小字（比如「本周 12」） */
+.stat-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}

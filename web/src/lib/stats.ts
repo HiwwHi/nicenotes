@@ -46,3 +46,20 @@ export function countBy<K extends string>(items: Note[], key: (note: Note) => K)
   }
   return result;
 }
+
+
+/**
+ * 最近 7 天复习了几次（含今天）。
+ *
+ * 「累计 340 次」这种数字看不出最近的状态 —— 这周是天天在看，还是三周没
+ * 打开过，只有按周算才看得出来。
+ */
+export function weekReviews(log: Record<string, number>, now = Date.now()): number {
+  let total = 0;
+  let cursor = startOfDay(now);
+  for (let i = 0; i < 7; i += 1) {
+    total += log[dayKey(cursor)] ?? 0;
+    cursor = addDays(cursor, -1);
+  }
+  return total;
+}
