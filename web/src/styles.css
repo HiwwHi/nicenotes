@@ -1913,6 +1913,12 @@ mark.hit {
   font-size: 12.5px;
 }
 
+/* 按钮文字不许折行 —— 手机上「全选」被挤成竖排两个字的那个样子 */
+.bulk-actions button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .bulk-actions button:disabled {
   opacity: 0.4;
   cursor: default;
@@ -2397,4 +2403,26 @@ mark.hit {
   margin: 6px 4px 2px;
   color: var(--ink-3);
   font-size: 11.5px;
+}
+
+
+/*
+ * 窄屏的批量条：六个按钮挤在一行。390px 下「完成」会被顶出屏幕，
+ * 所以把间距和内边距都收一收。
+ */
+@media (max-width: 520px) {
+  .bulk-bar {
+    gap: 10px;
+    padding: 8px 10px 8px 14px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .bulk-actions {
+    gap: 5px;
+  }
+
+  .bulk-actions .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 }

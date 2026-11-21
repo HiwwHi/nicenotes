@@ -461,7 +461,7 @@ export function Stream({
             disabled={selected.size === 0}
             onClick={() => void bulkRestore()}
           >
-            恢复复习
+            恢复
           </button>
           <button
             type="button"
