@@ -2464,10 +2464,33 @@ mark.hit {
  * 影响，看起来完全一样，点起来是两个世界。
  */
 @media (max-width: 720px) {
-  .item-actions .link {
+  /* 卡片底部的「改一下 / 这条先跳过」同理 */
+  .item-actions .link,
+  .review-foot .link {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: -10px;
     margin-bottom: -10px;
+  }
+
+  /* 设置那个图标按钮 34×34，顶栏还有余量，撑到 40 */
+  .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* 「记一条」在手机上是个圆形按钮，34×32 撑到 40 */
+  .top .btn-primary {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* 排序和「选择」只有 15-23px 高，同一行里挤着指头点 */
+  .stream-tools .order-switch button,
+  .stream-select {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    margin-top: -8px;
+    margin-bottom: -8px;
   }
 }
