@@ -262,3 +262,16 @@ export function transaction<T>(fn: () => T): T {
     throw error;
   }
 }
+
+
+/**
+ * 数据库文件大概多大（字节）。
+ *
+ * page_count × page_size 是 SQLite 自己认的数，比 ls 看文件更准（WAL 模式下
+ * 主文件不一定是全部）。
+ */
+export function databaseSize(): number {
+  const pages = db.prepare('PRAGMA page_count').get() as { page_count?: number } | undefined;
+  const size = db.prepare('PRAGMA page_size').get() as { page_size?: number } | undefined;
+  return (pages?.page_count ?? 0) * (size?.page_size ?? 0);
+}

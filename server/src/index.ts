@@ -17,7 +17,12 @@ import {
   tidySessions,
   tooManyAttempts,
 } from './auth.js';
-import { getUserById, getUserByEmail, listHistory } from './db.js';
+import {
+  databaseSize,
+  getUserByEmail,
+  getUserById,
+  listHistory,
+} from './db.js';
 import { runSync } from './sync.js';
 import type { SyncNote } from './types.js';
 
@@ -62,6 +67,7 @@ app.get('/api/health', (c) =>
     allowRegister,
     startedAt: STARTED_AT,
     uptimeMs: Date.now() - STARTED_AT,
+    dbBytes: databaseSize(),
   }),
 );
 

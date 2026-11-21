@@ -265,6 +265,7 @@ try {
   const meta = await api('/api/health');
   check('health 返回启动时间', typeof meta.body?.startedAt === 'number' && meta.body.startedAt > 0);
   check('uptimeMs 是非负数', typeof meta.body?.uptimeMs === 'number' && meta.body.uptimeMs >= 0);
+  check('dbBytes 是正数', typeof meta.body?.dbBytes === 'number' && meta.body.dbBytes > 0);
 
   console.log('\n改密码');
   const wrongPw = await api('/api/auth/password', {
