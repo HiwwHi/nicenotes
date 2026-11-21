@@ -34,6 +34,20 @@ const allowRegister = process.env.ALLOW_REGISTER !== '0';
 app.use('/api/*', cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
 
 /*
+ * API 响应的两个基本头。
+ *
+ * no-store：同步结果是「此刻的数据」，被中间层或浏览器缓存住就会一直
+ *   拿到旧的 —— 而且是带着 token 的响应，本来也不该进任何缓存。
+ * nosniff：让浏览器别猜类型，省得哪天返回的内容被当成脚本执行。
+ */
+app.use('/api/*', async (c, next) => {
+  await next();
+  c.header('cache-control', 'no-store');
+  c.header('x-content-type-options', 'nosniff');
+  c.header('referrer-policy', 'same-origin');
+});
+
+/*
  * startedAt 用来判断服务是不是刚重启过。
  *
  * 排查同步问题时第一个要问的就是这个：客户端说「一直连不上」，服务端
