@@ -503,7 +503,7 @@ export function Settings({ theme, onTheme }: Props) {
           ——装完主屏直接出现图标，全屏打开，不用手动「分享 → 添加到主屏幕」。
         </p>
         <p className="panel-note">
-          NiceNotes v2 · MIT ·{' '}
+          NiceNotes v{__APP_VERSION__} · MIT ·{' '}
           <a href="https://github.com/HiwwHi/nicenotes" target="_blank" rel="noreferrer">
             源码
           </a>
