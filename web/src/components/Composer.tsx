@@ -180,7 +180,16 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
 
     const seen = new Set<string>();
     const list: string[] = [];
-    for (const note of notes) {
+
+    /*
+     * 新的排在前面。
+     *
+     * 按数组原顺序走的话，`[[` 一打出来最前面全是几个月前的旧笔记 ——
+     * 而想连的那条，通常是刚写的。
+     */
+    const ordered = [...notes].sort((a, b) => b.createdAt - a.createdAt);
+
+    for (const note of ordered) {
       if (note.deletedAt || note.id === noteId) continue;
       const title = plainText(splitBody(note.body).title).trim();
       if (!title || seen.has(title)) continue;
