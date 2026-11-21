@@ -76,6 +76,9 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
   const [versions, setVersions] = useState<HistoryVersion[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+  /** 切到预览再切回来时，把滚动位置还原 —— 长笔记写到一半想看看效果，
+      回来发现又从头开始了 */
+  const scrollRef = useRef(0);
 
   // 边写边存，停手半秒就落盘。新建和编辑都存
   useEffect(() => {
@@ -270,14 +273,22 @@ export function Composer({ mode, initial, noteId, onClose, onSubmit }: Props) {
               <button
                 type="button"
                 className={tab === 'write' ? 'is-active' : ''}
-                onClick={() => setTab('write')}
+                onClick={() => {
+                  setTab('write');
+                  requestAnimationFrame(() => {
+                    if (areaRef.current) areaRef.current.scrollTop = scrollRef.current;
+                  });
+                }}
               >
                 写
               </button>
               <button
                 type="button"
                 className={tab === 'preview' ? 'is-active' : ''}
-                onClick={() => setTab('preview')}
+                onClick={() => {
+                  scrollRef.current = areaRef.current?.scrollTop ?? 0;
+                  setTab('preview');
+                }}
               >
                 预览
               </button>
