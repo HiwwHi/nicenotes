@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NiceNotes · 10 条笔记 · 2026/11/21</title>
+<style>
+  :root { color-scheme: light; }
+  /* 点目录跳过去的时候平滑一点，一屏一屏地闪太晕 */
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; padding: 40px 20px 80px; background: #f7f4ee; color: #2a2722;
+    font: 16px/1.9 "Noto Serif SC", "Songti SC", Georgia, serif;
+  }
+  main { max-width: 680px; margin: 0 auto; }
+  article {
+    background: #fff; border: 1px solid #e6e0d4; border-radius: 14px;
+    padding: 24px 26px; margin-bottom: 18px;
+  }
+  h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; line-height: 1.5; }
+  .meta { margin: 0 0 14px; color: #9a9488; font-size: 12px; font-family: system-ui, sans-serif; }
+  .tag {
+    display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px;
+    border: 1px solid #e2dbcd; background: #f7f4ee; color: #9a9488;
+    font-size: 11px; font-weight: 400; vertical-align: middle;
+    font-family: system-ui, sans-serif;
+  }
+  .body p { margin: 0 0 10px; }
+  .body p:last-child { margin-bottom: 0; }
+  .body code {
+    background: #f1ece1; border-radius: 5px; padding: 1px 5px;
+    font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-word;
+  }
+  .body pre {
+    margin: 12px 0; padding: 12px 14px; border-radius: 10px;
+    background: #f7f4ee; border: 1px solid #e6e0d4; overflow-x: auto;
+  }
+  .body pre code {
+    background: none; padding: 0; border-radius: 0;
+    font: 13.5px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre; word-break: normal;
+  }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  .body table { border-collapse: collapse; font-size: 13px; }
+  .body th, .body td {
+    border: 1px solid #e2dbcd; padding: 6px 10px; text-align: left; vertical-align: top;
+  }
+  .body th { background: #f7f4ee; font-weight: 600; }
+  .body ul, .body ol { margin: 10px 0; padding-left: 22px; }
+  .body li { margin: 3px 0; }
+  a { color: #8d5a2c; text-decoration: none; border-bottom: 1px solid #e2cdb2; word-break: break-all; }
+  .toc {
+    max-width: 680px; margin: 0 auto 22px; padding: 16px 20px;
+    background: #fff; border: 1px solid #e6e0d4; border-radius: 14px;
+    font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  }
+  .toc-title {
+    margin: 0 0 8px; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #b3ac9f;
+  }
+  .toc details { padding: 5px 0; border-top: 1px solid #f2ede3; }
+  .toc details:first-of-type { border-top: none; }
+  .toc summary { cursor: pointer; font-size: 13.5px; color: #5a544b; }
+  .toc summary .count { color: #b3ac9f; font-size: 12px; margin-left: 3px; }
+  .toc ul { list-style: none; margin: 6px 0 2px; padding: 0 0 0 16px; }
+  .toc li { margin: 3px 0; font-size: 13.5px; line-height: 1.6; }
+  .toc a { border-bottom: none; }
+  .toc a:hover { border-bottom: 1px solid #e2cdb2; }
+  @media (max-width: 520px) {
+    body { padding: 20px 14px 60px; }
+    article { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<nav class="toc"><p class="toc-title">目录 · 10 条</p><details><summary>2026 年 11 月 <span class="count">10</span></summary><ul><li><a href="#n-6418d66c-3942-4ca5-bf8c-6516fd2fc2f9">导出的 HTML 要有排版</a></li><li><a href="#n-demo-seed-0001">probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。</a></li><li><a href="#n-demo-seed-0002">看到 -517 就是 EPROBE_DEFER，不是失败。</a></li><li><a href="#n-demo-seed-0003">dmesg 里 Freeing unused kernel memory 是内核态和用户态的分界线。</a></li><li><a href="#n-demo-seed-0004">两份 dts 用了同一个 GPIO，编译一声不响，上板才发现。</a></li><li><a href="#n-demo-seed-0005">initcall_debug 只能启动前打开，别人的 log 事后用不上。</a></li><li><a href="#n-demo-seed-0006">I2C 通信失败，先量上拉电阻，再看时序。</a></li><li><a href="#n-demo-seed-0007">设备树 reg 区间重叠，编译器不报，运行时内存被踩。</a></li><li><a href="#n-demo-seed-0008">间隔重复的关键不是复习，是在「快忘记」的那一刻复习。</a></li><li><a href="#n-demo-seed-0009">本地优先不是「离线能用」，是「本地数据才是唯一真相」。</a></li></ul></details></nav>
+<main>
+  <article id="n-6418d66c-3942-4ca5-bf8c-6516fd2fc2f9">
+    <h2>导出的 HTML 要有排版</h2>
+    <p class="meta">2026/11/21</p>
+    <div class="body"><p>第一段普通文字，里面有 <code>i2c_transfer</code> 这样的行内代码，还有一个链接 <a href="https://www.kernel.org" target="_blank" rel="noreferrer noopener">https://www.kernel.org</a> 。</p>
+<ul><li>列表第一项</li><li>列表第二项带 <code>code</code></li></ul>
+<ol><li>有序第一项</li><li>有序第二项</li></ol>
+<div class="table-scroll"><table><thead><tr><th>寄存器</th><th>地址</th><th>说明</th></tr></thead><tbody><tr><td>CTRL</td><td>0x00</td><td>主控制</td></tr><tr><td>STAT</td><td>0x04</td><td>状态</td></tr></tbody></table></div>
+<pre><code class="language-bash">dmesg | grep -i i2c</code></pre>
+<p>第二段落，提到 另一条笔记 这种内链。</p></div>
+  </article>
+  <article id="n-demo-seed-0001">
+    <h2>probe 慢，先怀疑 regulator 的上电时序，最后才怀疑内核。</h2>
+    <p class="meta">2026/11/21</p>
+    <div class="body"><p>顺序是：量 <code>regulator enable</code> 到输出稳定的时间 → 看 driver 的 probe 里有没有 I2C 轮询等待 → 查有没有 <code>-EPROBE_DEFER</code> 反复重试 → 才轮到调度和 CPU 频率。<br>大多数「内核慢」最后都是硬件时序。</p></div>
+  </article>
+  <article id="n-demo-seed-0002">
+    <h2>看到 -517 就是 EPROBE_DEFER，不是失败。</h2>
+    <p class="meta">2026/11/20</p>
+    <div class="body"><p><code>-517</code> 的意思是「我依赖的东西还没准备好」，内核让你等一等。真正要查的是那个依赖为什么没起来 —— 常见是 <code>regulator</code>、<code>clk</code>、<code>gpio</code> 的驱动还没 probe 完。</p></div>
+  </article>
+  <article id="n-demo-seed-0003">
+    <h2>dmesg 里 Freeing unused kernel memory 是内核态和用户态的分界线。</h2>
+    <p class="meta">2026/11/19</p>
+    <div class="body"><p>它之前全是内核初始化，之后才是 init。算启动耗时必须先按这一刀切开，否则会把用户态的慢算到内核头上。</p></div>
+  </article>
+  <article id="n-demo-seed-0004">
+    <h2>两份 dts 用了同一个 GPIO，编译一声不响，上板才发现。</h2>
+    <p class="meta">2026/11/18</p>
+    <div class="body"><p>pinctrl 里 A 节点用了 <code>GPIO3_A2</code>，B 节点也用了。合并时不会报冲突，因为语法完全合法。只有运行时读 pinmux 寄存器才知道谁赢了。<br>多人并行改 dts 时这是高频事故。</p></div>
+  </article>
+  <article id="n-demo-seed-0005">
+    <h2>initcall_debug 只能启动前打开，别人的 log 事后用不上。</h2>
+    <p class="meta">2026/11/16</p>
+    <div class="body"><p>所以拿到一份现成的 dmesg，只能靠时间戳差值人工找嫌疑：</p>
+<pre><code class="language-text">[    0.823] probe of 1c28000.i2c returned 0 after 1204 usecs
+[    1.457] probe of fe2b0000.ethernet returned -517 after 3 usecs</code></pre>
+<p>这两行差了 0.6 秒，真正的嫌疑是第一行 —— 它自己花了 1.2ms。</p></div>
+  </article>
+  <article id="n-demo-seed-0006">
+    <h2>I2C 通信失败，先量上拉电阻，再看时序。</h2>
+    <p class="meta">2026/11/15</p>
+    <div class="body"><p><code>4.7k</code> 上拉在 <code>400k</code> 速率下边沿常常太慢。示波器看 SCL 上升沿，如果爬到 3.3V 用了几百纳秒，就是它。</p>
+<pre><code class="language-bash"># 先确认设备在不在总线上
+i2cdetect -y 1
+# 再读一遍寄存器，看有没有响应
+i2cget -y 1 0x38 0x00</code></pre>
+<p>曾经因为这个换过一整批板子上的电阻。</p></div>
+  </article>
+  <article id="n-demo-seed-0007">
+    <h2>设备树 reg 区间重叠，编译器不报，运行时内存被踩。</h2>
+    <p class="meta">2026/11/13</p>
+    <div class="body"><p>两个节点都从 <code>0x10000000</code> 起、长度各 <code>0x1000</code> —— 完全合法。这类问题只能自己写脚本扫，靠 review 看是看不出来的。</p></div>
+  </article>
+  <article id="n-demo-seed-0008">
+    <h2>间隔重复的关键不是复习，是在「快忘记」的那一刻复习。</h2>
+    <p class="meta">2026/11/11</p>
+    <div class="body"><p>太早复习是浪费，太晚复习等于重学。所以真正要算的不是「第几天复习」，是「你有多大概率还记得」。<br>难度系数 <code>ease</code> 就是这个估计。</p></div>
+  </article>
+  <article id="n-demo-seed-0009">
+    <h2>本地优先不是「离线能用」，是「本地数据才是唯一真相」。</h2>
+    <p class="meta">2026/11/9</p>
+    <div class="body"><p>服务器只是另一台设备。同步是两台设备交换各自知道的事实，不是把数据上传备份。<br>这个区别决定了断网时你到底还能不能干活。</p></div>
+  </article>
+</main>
+</body>
+</html>

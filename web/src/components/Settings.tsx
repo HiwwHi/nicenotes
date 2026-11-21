@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
 import { pastLabel, splitBody } from '../lib/date';
+import { downloadText } from '../lib/download';
 import { buildHeatmap, computeStreak, totalReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
 import {
@@ -95,13 +96,7 @@ export function Settings({ theme, onTheme }: Props) {
   const cells = buildHeatmap(log, 12, now);
 
   function doExport() {
-    const blob = new Blob([buildExport()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nicenotes-${todayStamp()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadText(buildExport(), `nicenotes-${todayStamp()}.json`, 'application/json');
     toast('已导出，是一个普通 JSON 文件');
   }
 
@@ -139,13 +134,7 @@ export function Settings({ theme, onTheme }: Props) {
       return;
     }
 
-    const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nicenotes-${todayStamp()}.md`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadText(text, `nicenotes-${todayStamp()}.md`, 'text/markdown;charset=utf-8');
 
     /*
      * 正文里以 ## 开头的行，在不同工具里含义不一样 —— 这份文件的结构就是
@@ -173,13 +162,7 @@ export function Settings({ theme, onTheme }: Props) {
       return;
     }
 
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nicenotes-${todayStamp()}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadText(html, `nicenotes-${todayStamp()}.html`, 'text/html;charset=utf-8');
     toast('导出了一个 HTML，双击就能看');
   }
 
