@@ -80,7 +80,9 @@ export function Rich({ text, marks = [] }: { text: string; marks?: string[] }) {
                 window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { title: segment.text } }))
               }
             >
-              {segment.text}
+              {/* 内链里也会出现搜索词，别处都标了，这里漏了的话用户看不出
+                  这条为什么命中 */}
+              <Marked text={segment.text} marks={marks} />
             </button>
           );
         }
