@@ -207,6 +207,7 @@ Once installed it opens offline too — the page and its JS/CSS are cached local
 |---|---|
 | <kbd>Space</kbd> | Expand the note |
 | <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Forgot / Fuzzy / Remembered |
+| <kbd>J</kbd> / <kbd>K</kbd> | Next / previous note |
 | <kbd>N</kbd> | New note |
 | <kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd> | Jump to search |
 | <kbd>Enter</kbd> | Open the first search result |

@@ -232,6 +232,7 @@ npm start          # 后端同时托管前端静态文件，只有一个端口
 |---|---|
 | <kbd>空格</kbd> | 展开内容 |
 | <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | 忘了 / 有点模糊 / 记得 |
+| <kbd>J</kbd> / <kbd>K</kbd> | 上下看下一条 / 上一条 |
 | <kbd>N</kbd> | 记一条 |
 | <kbd>/</kbd> 或 <kbd>Ctrl</kbd>+<kbd>K</kbd> | 跳到搜索框 |
 | <kbd>Enter</kbd> | 搜索结果里直接看第一条 |

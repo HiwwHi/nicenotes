@@ -353,6 +353,9 @@ export function Settings({ theme, onTheme }: Props) {
             <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 忘了 / 有点模糊 / 记得
           </li>
           <li>
+            <kbd>J</kbd> <kbd>K</kbd> 上下看下一条 / 上一条
+          </li>
+          <li>
             <kbd>N</kbd> 记一条
           </li>
           <li>

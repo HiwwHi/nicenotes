@@ -313,6 +313,41 @@ export function Stream({
     return found;
   }, [alive, openId]);
 
+  /**
+   * j / k 上下走。
+   *
+   * 列表长起来之后，一条一条点开看再点回去很累手。j 是下一条、k 是上一条，
+   * 和 vim、less 一样 —— 用这个应用的人大概都按过。
+   *
+   * 多选模式下让位：那时候点整条是勾选，j/k 容易误操作。
+   */
+  useEffect(() => {
+    if (selectMode) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key !== 'j' && event.key !== 'k') return;
+
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+      const list = streamed;
+      if (list.length === 0) return;
+
+      const index = list.findIndex((note) => note.id === openId);
+      const step = event.key === 'j' ? 1 : -1;
+      const nextIndex = index === -1 ? 0 : Math.min(list.length - 1, Math.max(0, index + step));
+      const next = list[nextIndex];
+      if (!next) return;
+
+      event.preventDefault();
+      jump(next.id);
+    };
+
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [streamed, openId, selectMode, jump]);
+
   const renderNote = (note: StoredNote) => (
     <NoteItem
       key={note.id}
