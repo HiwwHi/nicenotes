@@ -666,10 +666,34 @@ export async function unarchiveNotes(ids: string[]): Promise<void> {
   scheduleSync();
 }
 
+/**
+ * 正在写盘的那几条。
+ *
+ * 手抖双击「记得」的话两次点击都会拿到评分前的同一份 note，各算一次
+ * —— reps 加两次、间隔从 2 天直接跳到 5 天。按 id 加锁：同一条处理完之前
+ * 不接第二次，不同的条互不影响。
+ */
+const grading = new Set<string>();
+
 export async function grade(id: string, value: Grade): Promise<void> {
+  if (grading.has(id)) return;
+
   const note = state.notes.find((item) => item.id === id);
   if (!note) return;
 
+  grading.add(id);
+  try {
+    await applyGradeAndStore(id, note, value);
+  } finally {
+    grading.delete(id);
+  }
+}
+
+async function applyGradeAndStore(
+  id: string,
+  note: StoredNote,
+  value: Grade,
+): Promise<void> {
   const now = Date.now();
   const wasNew = isNew(note);
   // 手滑点到「忘记了」会把间隔直接打回原点，得留一条退路
