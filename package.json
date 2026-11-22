@@ -1,6 +1,6 @@
 {
   "name": "nicenotes",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "description": "本地优先的间隔重复笔记：写一句话，它会在你快忘记的时候回来找你",
   "license": "MIT",
