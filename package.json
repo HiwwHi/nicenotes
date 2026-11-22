@@ -18,7 +18,7 @@
     "build": "npm run build -w web && npm run build -w server",
     "start": "npm run start -w server",
     "typecheck": "npm run typecheck -w web && npm run typecheck -w server",
-    "test": "node --import tsx --test scripts/check-rich.mjs scripts/check-date.mjs scripts/check-scheduler.mjs scripts/check-search.mjs scripts/check-stats.mjs",
+    "test": "node --import tsx --test scripts/check-rich.mjs scripts/check-date.mjs scripts/check-scheduler.mjs scripts/check-search.mjs scripts/check-stats.mjs scripts/check-markdown-import.mjs",
     "check:server": "npm run build -w server && node scripts/check-server.mjs"
   },
   "devDependencies": {
