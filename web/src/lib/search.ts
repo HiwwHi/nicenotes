@@ -360,7 +360,10 @@ export function relatedNotes(note: StoredNote, notes: StoredNote[], limit = 3): 
  * 那样你看到的一行跟搜索词毫无关系，等于白搜。
  */
 export function snippet(text: string, marks: string[], length = 64): string {
-  if (marks.length === 0) return text;
+  // 没有命中词也要截：这个函数的语义是「给一小段预览」，不是「原样返回」。
+  // 现在调用方（NoteItem）已经先判过 marks 为空的情况，走不到这里，但
+  // 下一个调用的人不该踩这个坑。
+  if (marks.length === 0) return text.length > length ? `${text.slice(0, length)}…` : text;
 
   const lower = text.toLowerCase();
   let at = -1;
