@@ -92,6 +92,16 @@ export function Settings({ theme, onTheme }: Props) {
     null,
   );
   const daysSince = firstAt == null ? 0 : Math.max(1, Math.floor((now - firstAt) / 86_400_000) + 1);
+
+  // 平均间隔：只算已经进入复习循环的那些（从没复习过的 interval 是 0，
+  // 算进去会把平均数拉低到没意义）
+  const intervals = notes
+    .filter((note) => !note.deletedAt && note.memory.reps > 0)
+    .map((note) => note.memory.interval);
+  const avgInterval =
+    intervals.length === 0
+      ? 0
+      : Math.round(intervals.reduce((sum, value) => sum + value, 0) / intervals.length);
   const cells = buildHeatmap(log, 12, now);
 
   /** 导出文件名里带上条数：备份攒了几个之后，光看日期分不出内容和大小 */
@@ -355,6 +365,7 @@ export function Settings({ theme, onTheme }: Props) {
         {firstAt != null && (
           <p className="panel-note">
             从 {new Date(firstAt).toLocaleDateString('zh-CN')} 记到现在，跨了 {daysSince} 天。
+            {avgInterval > 0 && ` 手上这些平均每 ${avgInterval} 天见一次面。`}
           </p>
         )}
 
