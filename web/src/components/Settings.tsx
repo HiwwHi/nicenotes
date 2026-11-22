@@ -119,8 +119,17 @@ export function Settings({ theme, onTheme }: Props) {
 
   async function doImport(file: File) {
     try {
-      const count = await importJson(await file.text());
-      toast(count > 0 ? `导入 ${count} 条` : '文件里没有笔记', count > 0 ? 'ok' : 'warn');
+      const result = await importJson(await file.text());
+
+      if (result.added === 0 && result.skipped === 0) {
+        toast('文件里没有笔记', 'warn');
+        return;
+      }
+
+      const parts: string[] = [];
+      if (result.added > 0) parts.push(`导入 ${result.added} 条`);
+      if (result.skipped > 0) parts.push(`${result.skipped} 条本机已有，留着本机的`);
+      toast(parts.join('，'), result.added > 0 ? 'ok' : 'warn');
     } catch (error) {
       toast(
         error instanceof Error && error.message ? error.message : '这个文件读不了，需要之前导出的 JSON',

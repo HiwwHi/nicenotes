@@ -1056,7 +1056,13 @@ export function buildExport(): string {
   );
 }
 
-export async function importJson(raw: string): Promise<number> {
+export interface ImportResult {
+  added: number;
+  /** 本机已经有这个 id 的，保留本机版本，只计数 */
+  skipped: number;
+}
+
+export async function importJson(raw: string): Promise<ImportResult> {
   const parsed = JSON.parse(raw) as { app?: string; notes?: Partial<StoredNote>[] };
 
   /*
@@ -1083,11 +1089,24 @@ export async function importJson(raw: string): Promise<number> {
   const incoming = Array.isArray(parsed.notes) ? parsed.notes : [];
   const now = Date.now();
   const merged: StoredNote[] = [];
+  let skipped = 0;
 
   for (const item of incoming) {
     if (!item?.body) continue;
     const id = typeof item.id === 'string' ? item.id : newId();
-    const existing = state.notes.find((note) => note.id === id);
+
+    /*
+     * 本机已经有这条，就留着本机的。
+     *
+     * 导入最常见的用法是「换设备」和「补回来」，不是「回退到某天」。
+     * 原来这里直接覆盖，结果很吓人：导出一份备份、又写了几天、再导入
+     * 那份旧的 —— 中间写的全被换回旧版本，而且没有任何提示。
+     */
+    if (state.notes.some((note) => note.id === id)) {
+      skipped += 1;
+      continue;
+    }
+
     const updatedAt = Number(item.updatedAt ?? now);
     const note: StoredNote = {
       id,
@@ -1109,12 +1128,12 @@ export async function importJson(raw: string): Promise<number> {
        * 一路推到云端，从此在别的设备上也删不掉，混在自己写的里面。
        */
       origin: item.origin === 'demo' ? 'demo' : undefined,
-      baseUpdatedAt: existing?.baseUpdatedAt ?? 0,
+      baseUpdatedAt: 0,
     };
     merged.push(note);
   }
 
-  if (merged.length === 0) return 0;
+  if (merged.length === 0) return { added: 0, skipped };
 
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   for (const note of merged) byId.set(note.id, note);
@@ -1122,7 +1141,7 @@ export async function importJson(raw: string): Promise<number> {
   await local.putNotes(merged);
   advance();
   scheduleSync();
-  return merged.length;
+  return { added: merged.length, skipped };
 }
 
 /**
