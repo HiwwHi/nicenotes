@@ -541,7 +541,17 @@ export async function editNote(id: string, body: string): Promise<boolean> {
     toast('这条已经在别处删掉了，改的内容没有保存', 'error');
     return false;
   }
-  if (!text || text === note.body) return true;
+  /*
+   * 删光了不算「改好了」。原来这里和「没改」走同一个分支直接返回成功，
+   * 弹窗一关、内容其实没变 —— 用户会以为自己清空了。
+   * 想删掉一条有专门的「删除」，编辑框不该兼这个职。
+   */
+  if (!text) {
+    toast('内容不能为空。想删掉这条的话用「删除」', 'warn');
+    return false;
+  }
+
+  if (text === note.body) return true;
 
   const tooLong = text.length > MAX_BODY;
   await store({ ...note, body: clipBody(text), updatedAt: Date.now() });
