@@ -79,9 +79,45 @@ export function Stream({
     });
   }, []);
 
+  /** 上一次点的是哪条 —— Shift 连选从它开始算 */
+  const anchorRef = useRef<string | null>(null);
+
+  /**
+   * 多选时点一条。按住 Shift 就从上一次点的那条连到这条一起选上。
+   *
+   * 顺序从 DOM 上读：分组、搜索、随机排序下「上下」的含义都不一样，
+   * 而 DOM 里排的就是眼睛看到的顺序。
+   */
+  const handleSelect = useCallback(
+    (id: string, event: { shiftKey: boolean }) => {
+      const anchor = anchorRef.current;
+
+      if (event.shiftKey && anchor && anchor !== id) {
+        const order = [...document.querySelectorAll<HTMLElement>('.item')].map((el) =>
+          el.id.replace(/^note-/, ''),
+        );
+        const from = order.indexOf(anchor);
+        const to = order.indexOf(id);
+
+        if (from !== -1 && to !== -1) {
+          const start = Math.min(from, to);
+          const end = Math.max(from, to);
+          const range = order.slice(start, end + 1);
+          setSelected((current) => new Set([...current, ...range]));
+          return;
+        }
+      }
+
+      toggleSelect(id);
+      anchorRef.current = id;
+    },
+    [toggleSelect],
+  );
+
   const exitSelect = useCallback(() => {
     setSelectMode(false);
     setSelected(new Set());
+    anchorRef.current = null;
   }, []);
 
   // 多选时按 Esc 退出。App 那层的 Esc 只管搜索和设置，管不到这里。
@@ -363,7 +399,7 @@ export function Stream({
       onJump={jump}
       selectMode={selectMode}
       selected={selected.has(note.id)}
-      onSelect={() => toggleSelect(note.id)}
+      onSelect={(event) => handleSelect(note.id, event)}
       backTo={
         openId === note.id && backNote && backNote.id !== note.id
           ? { title: plainText(splitBody(backNote.body).title) || '刚才那条', onClick: goBack }
@@ -546,7 +582,7 @@ export function Stream({
                 onJump={jump}
                 selectMode={selectMode}
                 selected={selected.has(hit.note.id)}
-                onSelect={() => toggleSelect(hit.note.id)}
+                onSelect={(event) => handleSelect(hit.note.id, event)}
               />
             ))}
           </ul>

@@ -29,7 +29,7 @@ interface Props {
   /** 多选模式：点整条是勾选，不是展开 */
   selectMode?: boolean;
   selected?: boolean;
-  onSelect?: () => void;
+  onSelect?: (event: { shiftKey: boolean }) => void;
   /** 顺着内链跳过来时，指向来处，让用户能退回去 */
   backTo?: { title: string; onClick: () => void };
 }
