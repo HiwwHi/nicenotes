@@ -1,4 +1,4 @@
-import { addDays, dayKey, startOfDay } from './date';
+import { DAY, addDays, dayKey, startOfDay } from './date';
 import type { Note } from '../types';
 
 export function computeStreak(log: Record<string, number>, now = Date.now()): number {
@@ -62,4 +62,33 @@ export function weekReviews(log: Record<string, number>, now = Date.now()): numb
     cursor = addDays(cursor, -1);
   }
   return total;
+}
+
+
+/** 把 'yyyy-mm-dd' 解成本地时间戳（不能直接 new Date(key)，那按 UTC 解） */
+function parseKey(key: string): number {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1).getTime();
+}
+
+/**
+ * 历史上最长的一段连续。
+ *
+ * 只显示「当前连续」的话，断一次就归零，之前攒的那些白攒了 —— 人会有
+ * 「反正断了」的泄气感。留一个最好成绩，断了也还在。
+ */
+export function longestStreak(log: Record<string, number>): number {
+  const days = Object.keys(log)
+    .filter((key) => (log[key] ?? 0) > 0)
+    .sort();
+  if (days.length === 0) return 0;
+
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < days.length; i += 1) {
+    const gap = parseKey(days[i]!) - parseKey(days[i - 1]!);
+    run = gap === DAY ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+  return best;
 }

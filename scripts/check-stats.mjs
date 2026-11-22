@@ -15,6 +15,7 @@ import {
   buildHeatmap,
   computeStreak,
   countBy,
+  longestStreak,
   totalReviews,
   weekReviews,
 } from '../web/src/lib/stats.ts';
@@ -140,4 +141,36 @@ test('countBy 按给定维度计数', () => {
 
 test('countBy 空数组返回空对象', () => {
   assert.deepEqual(countBy([], () => 'x'), {});
+});
+
+/* ---------------------------------------------------------------- longestStreak */
+
+test('最长连续：空记录是 0', () => {
+  assert.equal(longestStreak({}), 0);
+});
+
+test('最长连续：只有一天是 1', () => {
+  assert.equal(longestStreak({ [key(-5)]: 1 }), 1);
+});
+
+test('最长连续：连着三天就是 3', () => {
+  assert.equal(longestStreak({ [key(-2)]: 1, [key(-3)]: 1, [key(-4)]: 1 }), 3);
+});
+
+test('最长连续：取最长的那一段，不是最后一段', () => {
+  // 十天前连续 5 天，今天单独一天 —— 最好成绩是 5，不是 1
+  const log = { [key(0)]: 2 };
+  for (let i = 10; i >= 6; i -= 1) log[key(i)] = 1;
+  assert.equal(longestStreak(log), 5);
+  assert.equal(computeStreak(log, NOW), 1);
+});
+
+test('最长连续：值为 0 的日子不算进连续', () => {
+  assert.equal(longestStreak({ [key(-1)]: 1, [key(-2)]: 0, [key(-3)]: 1 }), 1);
+});
+
+test('最长连续：跨月跨年也算连续', () => {
+  const dec31 = '2025-12-31';
+  const jan1 = '2026-01-01';
+  assert.equal(longestStreak({ [dec31]: 1, [jan1]: 1 }), 2);
 });

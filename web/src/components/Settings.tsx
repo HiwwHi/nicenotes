@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { hasBackend } from '../lib/api';
 import { pastLabel, splitBody, todayStamp } from '../lib/date';
 import { downloadText } from '../lib/download';
-import { buildHeatmap, computeStreak, totalReviews, weekReviews } from '../lib/stats';
+import { buildHeatmap, computeStreak, longestStreak, totalReviews, weekReviews } from '../lib/stats';
 import type { Theme } from '../lib/theme';
 import {
   buildExport,
@@ -85,6 +85,7 @@ export function Settings({ theme, onTheme }: Props) {
   const streak = computeStreak(log, now);
   const reviews = totalReviews(log);
   const weekCount = weekReviews(log, now);
+  const best = longestStreak(log);
   // 第一条笔记是什么时候写的 —— 用 reduce 而不是 Math.min(...)，笔记多了
   // 展开成参数会爆栈
   const firstAt = notes.reduce<number | null>(
@@ -333,7 +334,10 @@ export function Settings({ theme, onTheme }: Props) {
         <div className="stats">
           <div className="stat">
             <span className="stat-value">{streak}</span>
-            <span className="stat-label">连续天数</span>
+            <span className="stat-label">
+              连续天数
+              {best > streak && <span className="stat-sub">最好 {best}</span>}
+            </span>
           </div>
           <div className="stat">
             <span className="stat-value">{reviews}</span>
