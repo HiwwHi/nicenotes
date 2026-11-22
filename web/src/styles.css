@@ -2494,3 +2494,9 @@ mark.hit {
     margin-bottom: -8px;
   }
 }
+
+/* 搜索历史里键盘走到的那一条 */
+.history-pick.is-active {
+  background: var(--bg-deep);
+  color: var(--ink);
+}

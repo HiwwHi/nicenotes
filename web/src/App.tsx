@@ -49,6 +49,8 @@ export default function App() {
 
   const [searches, setSearches] = useState<string[]>(() => readSearches());
   const [historyOpen, setHistoryOpen] = useState(false);
+  /** 键盘在历史里走到第几条，-1 表示还没进去 */
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
   // 停手一秒半才记进历史：打到一半的词不该出现在「最近搜过」里
@@ -293,16 +295,42 @@ export default function App() {
                   setHistoryOpen(false);
                 }}
                 onFocus={() => {
-                  if (!query && searches.length > 0) setHistoryOpen(true);
+                  if (!query && searches.length > 0) {
+                    setHistoryOpen(true);
+                    setHistoryIndex(-1);
+                  }
                 }}
                 // 已经聚焦时再点一下不会再触发 focus，所以 click 也要管
                 onClick={() => {
-                  if (!query && searches.length > 0) setHistoryOpen(true);
+                  if (!query && searches.length > 0) {
+                    setHistoryOpen(true);
+                    setHistoryIndex(-1);
+                  }
                 }}
                 placeholder="搜笔记，汉字或拼音首字母"
                 spellCheck={false}
                 aria-label="搜索笔记"
                 onKeyDown={(event) => {
+                  // 历史面板开着的时候，上下键和回车先归它用
+                  if (historyOpen && searches.length > 0) {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      setHistoryIndex((index) => Math.min(searches.length - 1, index + 1));
+                      return;
+                    }
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      setHistoryIndex((index) => Math.max(0, index - 1));
+                      return;
+                    }
+                    if (event.key === 'Enter' && historyIndex >= 0) {
+                      event.preventDefault();
+                      const picked = searches[historyIndex];
+                      if (picked) pickSearch(picked);
+                      return;
+                    }
+                  }
+
                   if (event.key !== 'Enter') return;
                   // 搜完按回车直接看第一条，不用再拿鼠标去点
                   event.preventDefault();
@@ -342,9 +370,14 @@ export default function App() {
                   </button>
                 </div>
                 <ul>
-                  {searches.map((item) => (
+                  {searches.map((item, index) => (
                     <li key={item}>
-                      <button type="button" className="history-pick" onClick={() => pickSearch(item)}>
+                      <button
+                        type="button"
+                        className={`history-pick ${index === historyIndex ? 'is-active' : ''}`}
+                        onMouseEnter={() => setHistoryIndex(index)}
+                        onClick={() => pickSearch(item)}
+                      >
                         {item}
                       </button>
                       <button
