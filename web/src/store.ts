@@ -1385,6 +1385,17 @@ export function buildHtml(): string {
     border-top: 1px solid #e6e0d4; color: #b3ac9f; font-size: 12px;
     font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
   }
+
+  /*
+   * 打印的时候：目录用不上（点不了），去掉能省一页；每条笔记不许被
+   * 分页从中间切开 —— 一条笔记拆在两张纸上，读的人得来回翻。
+   */
+  @media print {
+    .toc { display: none; }
+    .note { break-inside: avoid; }
+    .foot { break-inside: avoid; }
+    body { padding: 0; }
+  }
   @media (max-width: 520px) {
     body { padding: 20px 14px 60px; }
     article { padding: 18px; }
